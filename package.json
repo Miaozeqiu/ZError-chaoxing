@@ -1,0 +1,10 @@
+{
+  "name": "zerror-chaoxing",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "学习通网站的 ZError Agent Skill 与导航图谱",
+  "license": "MIT",
+  "engines": { "node": ">=22" },
+  "scripts": { "test": "node scripts/validate.mjs" }
+}
