@@ -9,6 +9,8 @@
 ```text
 skills/chaoxing/
 ├── SKILL.md                 入口与任务路由
+├── website.json             网站身份与仓库内图标路径
+├── assets/icon.png          学习通网站图标
 ├── references/
 │   ├── login.md             登录、凭据变量、学生课表
 │   ├── study.md             视频与章节任务的连续执行
@@ -20,7 +22,15 @@ skills/chaoxing/
 
 ## 与主程序的关系
 
-本仓库作为学习通通用站点资源的独立维护源；ZError 发行版继续携带经过审核的内置快照。当前程序不会自动拉取本仓库，并且通用 GitHub Skill 安装入口禁止覆盖同名内置 `chaoxing`，不要把它当作已经实现的远程更新通道。
+本仓库作为学习通通用站点资源的独立维护源。支持网站仓库的 ZError 版本会缓存仓库文档与图标，Agent 修改保存到本地分支；较旧发行版仍使用其内置快照。网站仓库入口与通用 Skill 安装入口不同。
+
+支持该功能的版本可在「设置 → Agent → 网站 → 导入 GitHub 仓库」预览并导入网站资源。网站包需要 `website.json`、`SKILL.md`、`site-graph.json` 和仓库内图标：
+
+```json
+{ "version": 1, "id": "chaoxing", "name": "学习通", "host": "chaoxing.com", "icon": "assets/icon.png" }
+```
+
+图标最多 256 KB，使用仓库内 PNG、ICO、JPEG、WebP 或 GIF，不使用外链；站点图标取自对应网站，仅作网站标识，品牌权利归其权利人。
 
 维护者在 ZError 的开发分支中审核差异后，同步 `skills/chaoxing/` 中的文件到：
 
