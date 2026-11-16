@@ -22,7 +22,7 @@ skills/chaoxing/
 
 ## 与主程序的关系
 
-本仓库作为学习通通用站点资源的独立维护源。支持网站仓库的 ZError 版本会缓存仓库文档与图标，Agent 修改保存到本地分支；较旧发行版仍使用其内置快照。网站仓库入口与通用 Skill 安装入口不同。
+本仓库维护学习通的通用操作经验与网站脚本。ZError 缓存站点文档与图标，Agent 写入经验时保存为独立的本地补充。网站仓库入口与通用 Skill 安装入口不同。
 
 支持该功能的版本可在「设置 → Agent → 网站 → 导入 GitHub 仓库」预览并导入网站资源。网站包需要 `website.json`、`SKILL.md`、`site-graph.json` 和仓库内图标：
 
@@ -40,24 +40,45 @@ src/services/agent/skills/bundled/chaoxing/
 
 随后运行主程序的测试和构建，在原生浏览器验证受影响的流程。不要删除内置资源或仅凭远端最新版本自动执行更新。其他客户端可按自己的 Skill 加载规则读取 `skills/chaoxing/SKILL.md`，并自行适配工具契约。
 
+## 课程脚本开发
+
+在本仓库分模块维护 TypeScript。`src/courses/index.ts` 提供入口，`match.ts` 负责匹配课名与授课教师，`types.ts` 定义输入和返回值。开发由外部编辑器或开发 Agent 完成。
+
+```sh
+npm ci
+npm run dev
+```
+
+在 ZError 的「设置 → Agent → 网站 → 学习通 → 网站设置」里，把网站经验 HTTP 地址设为 `http://127.0.0.1:8817/experience.json`，启用此来源的网站脚本并保存。`npm run build` 构建同样的静态文件到 `dist/`，可由自有 HTTP 服务托管。
+
+保存 `src/courses/` 或 `src/homework/` 下的脚本后，开发服务重新构建 JS 和清单。下一次工具调用检查清单的 ETag，验证产物 SHA-256 后使用新版本，当前工具调用继续使用已经加载的脚本。
+
+- `browser_list_courses` 列出当前学生课表中的课程，可按课名筛选。
+- `browser_open_course` 接受用户提供的课名，可直接调用。它优先精确名称，其次唯一的部分匹配。重名时返回候选，可补充授课教师。ZError 读取已登录的课表，验证候选和落地页，脚本只接收课名、授课教师和临时索引。
+- `browser_list_homework` 读取学生课程里的作业及状态。`browser_open_homework` 使用作业名称直接进入并返回页面快照。匹配脚本在 `src/homework/index.ts`，与课程共用名称匹配规则。
+
+- `browser_answer_homework` 对已打开的课程作答页自动查题与填答，`browser_review_homework` 供 Agent 读取实填值、找漏题。答题决策在 `src/homework/answers.ts`：将本地题库的精确候选映射到当前选项，排除冲突和不明确答案。脚本在隔离运行时执行，页面操作、核对和权限由 ZError 处理。没有自动保存、交卷或上传答案。
+- `browser_review_chapter` 核对学习通学生端当前小节。`browser_complete_chapter` 使用 `src/chapters/index.ts` 按页签、任务点顺序推进，并沿用应用的视频监控。宿主以章节目录待完成数核对完成状态。
+
 ## 维护原则
 
 - 只保存跨课程可复用、在真实页面验证过的方法；页面变化时重新观察。
 - 不保存账号密码、API Key、Cookie、会话令牌、个人学习记录、课程答案或真实课程/作业标识。
 - 不上传本地聊天、截图、网页导出或用户机器上的站点经验覆盖文件。
-- 不加入旧的题卡、解析器、`locators.json`、`see.json` 或模拟网页。定位来自当前页面快照。
+- 学生课表来自当前页面。课程匹配脚本不保存任何用户数据。
 - 图谱保留 `parserIds` 兼容字段供现有程序读取；这不代表本包提供解析器实现，Agent 仍使用当前浏览器工具。
 - 完成以用户指定范围的真实页面回执为准，不把视频正在播放或清单勾选当作完成，不承诺答案满分。
 
 ## 校验
 
-Node.js 22 或更新版本，无第三方依赖：
+使用 Node.js 22 或更新版本。
 
 ```sh
+npm ci
 npm test
 ```
 
-校验 Skill 入口、文档内部引用、图谱节点唯一性、正则表达式与边关系。CI 不访问学习平台、不登录账号、不做真实答题；原生行为仍需在 ZError 中验收。
+校验 Skill、图谱、脚本产物哈希和课名匹配。CI 使用本地样例，原生行为在 ZError 中验收。
 
 ## 许可
 

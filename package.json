@@ -5,6 +5,16 @@
   "type": "module",
   "description": "学习通网站的 ZError Agent Skill 与导航图谱",
   "license": "MIT",
-  "engines": { "node": ">=22" },
-  "scripts": { "test": "node scripts/validate.mjs" }
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc --noEmit && node scripts/build-scripts.mjs",
+    "dev": "node scripts/build-scripts.mjs --serve",
+    "test": "node scripts/validate.mjs && npm run build && node --test scripts/*.test.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.5",
+    "typescript": "5.8.3"
+  }
 }
