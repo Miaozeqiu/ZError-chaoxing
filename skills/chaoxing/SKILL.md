@@ -15,6 +15,8 @@ metadata:
 
 登录学习通时，优先调用 `browser_login_chaoxing()`。已登录或成功进入空间时返回 `loggedIn=true`；验证码和滑块需要用户处理。
 
+整课章节任务先调用 `browser_start_chapter_tasks(course_name)`，单节传 `current_only=true`。学习通课程或作业先用 `browser_list_courses`、`browser_open_course`、`browser_list_homework` 或 `browser_open_homework` 定位。读题和核对用 `browser_review_homework`，已授权作答用 `browser_answer_homework`。处理章节测验、讨论和提交前按下方参考文件核对范围。
+
 ## 按需读取
 
 | 当前任务 | 参考文件 |

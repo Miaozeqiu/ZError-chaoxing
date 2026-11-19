@@ -41,3 +41,9 @@
 - 切换章节、任务页签或刷新后，先重新获取快照，再用目标所在框的最新 ref、frameId 和 loaderId 操作。顶层 URL 未变化也可能已经替换了 iframe 文档。
 - 点击出现“目标 frame 不存在或不唯一”或“Node with given id does not belong to the document”时，重新读取快照并定位原目标；不要重复提交旧 ref 或照抄报错中的示例选择器。
 - 新快照中找不到目标时，核对当前章节、选中页签和可见框路径。只有页面确实提供该目标才继续点击；无法确认时报告当前页面与目标的差异。
+
+## 测验与讨论回执
+
+- 收到 `needs_quiz` 时先看 `quiz` 汇总。需要复核或补填时，传回 `chapterKey` 和 `quiz_job_id`，保持同一 `assignment_id` 和用户指定题号范围。保存或提交后核对平台回执，再继续原章节工作流。
+- 收到 `needs_discussion` 时，以 `discussion` 中的题目和少量回复作为参考，独立组织正文。只查看时用 `browser_review_chapter_discussion`。用户授权回复且 `canReply=true` 时，调用一次 `browser_reply_chapter_discussion`，传 `chapter_key`、`tab`、`discussion_id` 和 `reply`。
+- `discussion_completed` 表示平台已确认任务点完成。收到 `awaiting_discussion_credit` 或发送结果不明时，复核同一讨论。可见回复与平台登记分别核对。
