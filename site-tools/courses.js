@@ -24,6 +24,23 @@ var ZErrorSiteScript = (() => {
     run: () => run
   });
 
+  // src/courses/pageRules.ts
+  var courseListRules = {
+    active: ".tab-item.current, .tab-item.active, .tab-item.selected",
+    type: "#courseType",
+    studentTab: '.tab-item[coursetype="1"]',
+    menuName: "\u8BFE\u7A0B",
+    list: "#courselistArea, .courselistArea, .course-list",
+    item: "a[href], [data-href], [data-url], [onclick]",
+    card: "li, .course, .course-item, .courseItem, .course-card, .courseCard",
+    heading: '[class*="course-name"], [class*="courseName"], .course-title, .courseTitle, h3, h4',
+    teacher: '.teacher, .teacher-name, .teacherName, [class*="courseTeacher"], .course-info > p.line2:last-child',
+    more: ".folder, .course-folder, [folderid], [data-folder-id], .pagination .next, .load-more",
+    disabled: ':disabled, .disabled, [aria-disabled="true"]',
+    studentNames: ["\u6211\u5B66\u7684\u8BFE", "\u5DF2\u5B66\u7684\u8BFE"],
+    actionNames: ["\u8FDB\u5165\u5B66\u4E60", "\u8FDB\u5165\u8BFE\u7A0B", "\u8BFE\u7A0B\u5C01\u9762", "\u5B66\u4E60"]
+  };
+
   // src/matchTitle.ts
   var normalizeTitle = (text) => text.normalize("NFKC").replace(/\s+/gu, "").toLowerCase();
   function matchTitles(items, text) {
@@ -41,7 +58,9 @@ var ZErrorSiteScript = (() => {
   }
 
   // src/courses/index.ts
-  function run({ operation, query = "", teacher = "", courses }) {
+  function run(input) {
+    if (input.operation === "list_rules") return courseListRules;
+    const { operation, query = "", teacher = "", courses } = input;
     const matched = matchCourses(courses, query, teacher);
     return {
       ids: matched.map((course) => course.id),

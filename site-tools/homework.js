@@ -24,6 +24,50 @@ var ZErrorSiteScript = (() => {
     run: () => run
   });
 
+  // src/homework/pageRules.ts
+  var pageRules = {
+    rows: ".questionLi",
+    quizRows: ":is(.questionLi, .singleQuesId)",
+    keys: ["id", "data-questionid", "data-question-id", "questionid", "data"],
+    typeInputs: 'input[id^="answertype"]',
+    heading: ".mark_name, :scope > h3",
+    quizHeading: ".mark_name, :scope > h3, .Zy_TItle",
+    quizTitleKind: ".Zy_TItle",
+    quizTitle: ".newZy_TItle",
+    quizTitleNumber: ":scope > i",
+    quizOptions: ".Zy_ulTop > li",
+    quizChoiceText: ".after",
+    options: ".answerBg .answer_p",
+    optionRow: ".answerBg",
+    optionMark: ".num_option",
+    optionText: ".answer_p",
+    nested: ".reading_answer, .filling_answer, .line_answer, iframe",
+    extraStem: ".line_wid_half, .splitS-left .mark_name ~ .mark_name",
+    visual: 'img,svg,canvas,math,mjx-container,.MathJax,.font-cxsecret,[class*="cxsecret"]',
+    unreadableFont: "cxsecret",
+    title: ".mark_title, .work-title, h1",
+    labels: {
+      single: ["\u5355\u9009", "\u5355\u9009\u9898", "\u5355\u9879\u9009\u62E9", "\u5355\u9879\u9009\u62E9\u9898"],
+      multiple: ["\u591A\u9009", "\u591A\u9009\u9898", "\u591A\u9879\u9009\u62E9", "\u591A\u9879\u9009\u62E9\u9898"],
+      judgement: ["\u5224\u65AD", "\u5224\u65AD\u9898"],
+      completion: ["\u586B\u7A7A", "\u586B\u7A7A\u9898"]
+    },
+    codes: { 0: "single", 1: "multiple", 2: "completion", 3: "judgement" }
+  };
+  var homeworkListRules = {
+    list: ".bottomList",
+    item: "li[data]",
+    title: ".right-content .overHidden2, .titTxt, .workName, .work-title",
+    status: ".status",
+    page: ".pageDiv .xl-active",
+    previous: ".pageDiv .xl-prevPage",
+    next: ".pageDiv .xl-nextPage",
+    previousButton: ".pageDiv .xl-prevPage:not(.xl-disabled)",
+    nextButton: ".pageDiv .xl-nextPage:not(.xl-disabled)",
+    disabled: '.xl-disabled, [aria-disabled="true"], :disabled',
+    tabName: "\u4F5C\u4E1A"
+  };
+
   // src/matchTitle.ts
   var normalizeTitle = (text) => text.normalize("NFKC").replace(/\s+/gu, "").toLowerCase();
   function matchTitles(items, text) {
@@ -70,6 +114,8 @@ var ZErrorSiteScript = (() => {
 
   // src/homework/index.ts
   function run(request) {
+    if (request.operation === "page_rules") return pageRules;
+    if (request.operation === "list_rules") return homeworkListRules;
     if (request.operation === "resolve_answers") return resolveAnswers(request);
     const { operation, query = "", assignments } = request;
     const matched = matchTitles(assignments, query);

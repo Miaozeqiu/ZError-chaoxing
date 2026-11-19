@@ -1,3 +1,4 @@
+import { homeworkListRules, pageRules } from './pageRules'
 import { matchTitles } from '../matchTitle'
 import { resolveAnswers, type AnswerRequest } from './answers'
 
@@ -7,7 +8,9 @@ type HomeworkRequest = {
   assignments: Array<{ id: number; title: string }>
 }
 
-export function run(request: HomeworkRequest | AnswerRequest) {
+export function run(request: HomeworkRequest | AnswerRequest | { operation: 'page_rules' } | { operation: 'list_rules' }) {
+  if (request.operation === 'page_rules') return pageRules
+  if (request.operation === 'list_rules') return homeworkListRules
   if (request.operation === 'resolve_answers') return resolveAnswers(request)
   const { operation, query = '', assignments } = request
   const matched = matchTitles(assignments, query)
