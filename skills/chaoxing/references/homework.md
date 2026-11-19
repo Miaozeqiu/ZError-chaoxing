@@ -1,10 +1,11 @@
 # 学习通作业 / 章节测验
 
-在课程作答页，用 `browser_review_homework` 看题目、选项及当前作答。用户要求答题时优先用 `browser_answer_homework`。章节测验或专用工具需要补查的题，用 `browser_get_page` 定位对应题目容器。
+在课程作答页或章节测验，用 `browser_review_homework` 看题目、选项及当前作答。用户授权答题时优先用 `browser_answer_homework`。章节返回 `needs_quiz` 后，把 `chapterKey` 和 `quiz_job_id` 分别作为 `chapter_key` 和 `quiz_job_id` 传入。续批沿用 `assignment_id`、题号范围和测验标识。专用工具需要补查时，用 `browser_get_page` 定位对应测验框。
 
 ## 流程
 
-- 工具可用时，`browser_list_homework` 读取学生作业列表及状态，`browser_open_homework` 根据用户指定名称直接打开作业并返回页面快照。若已经在目标课程，省略 `course_name`。
+- 指定作业可先按 [本地快捷入口](../SKILL.md#本地快捷入口) 匹配课程和作业，向 `browser_open_homework` 传完整作业名和 `homework_url`。失效时省略该参数，从学生作业列表重新定位。章节测验从章节页进入。
+- 工具可用时，`browser_list_homework` 读取学生作业列表及状态，没有可用快捷入口时，`browser_open_homework` 根据用户指定名称从列表打开作业并返回页面快照。若已经在目标课程，省略 `course_name`。
 - 课程作业：在课程壳点侧栏「作业」。已经在「任务」就改点「作业」。名单在页内 iframe，不要 `navigate` 打开 `mooc2/work/list`。
 - 从名单点作业名后，如果是介绍页，按用户授权点击「开始作答／继续作答」。章节播放里的测验仍走原流程。
 - 指定第 1–5 题时，读取、填答和复核都传 `question_range: {"start":1,"end":5}`，续批沿用同一范围和 `assignment_id`。脚本只填入本地题库精确且可信的答案，并保留已有冲突内容。

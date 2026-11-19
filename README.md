@@ -83,3 +83,8 @@ npm test
 ## 许可
 
 MIT，保留原 ZError 的版权与许可声明，见 [LICENSE](LICENSE)。
+
+## 工具发布
+
+`site-tools/tools.json` 定义 Agent 工具，`site-tools/*.js` 提供隔离脚本。Open 从同一 Git 提交同步这些文件。凭据、页面动作和提交授权由 ZError 宿主核验。
+修改 `src/` 后运行 `npm run build:publish`，把更新的 `site-tools/` 与源代码一起提交。

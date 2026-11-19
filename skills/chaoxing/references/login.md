@@ -1,6 +1,8 @@
 # 学习通登录与学生课表
 
-## 登录
+用户要求登录，或执行学习通任务遇到登录页时，优先调用 `browser_login_chaoxing()`。只在 `loggedIn=true` 后继续进课、打开章节或作业。工具由 ZError 宿主安全填写网站设置中的加密凭据。若提示人工验证，请用户在浏览器完成验证和登录；账号被拒绝时停止重试。
+
+## 通用工具备用流程
 
 1. 从 `https://i.chaoxing.com` 进入。已有登录态时直接检查空间页，不重新填写凭据。
 2. 被带到 passport2 登录页时先 `browser_get_page` 确认表单。确需直接打开登录页，可使用 `https://passport2.chaoxing.com/login?fid=&newversion=true&refer=https%3A%2F%2Fi.chaoxing.com`。不要反复在旧版和新版登录页之间跳转。

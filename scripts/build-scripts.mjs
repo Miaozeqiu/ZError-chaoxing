@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url'
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const out = resolve(root, 'dist')
 const skill = resolve(root, 'skills/chaoxing')
+const toolsPath = resolve(root, 'site-tools/tools.json')
+const publish = process.argv.includes('--publish')
 const serve = process.argv.includes('--serve')
 const digest = bytes => createHash('sha256').update(bytes).digest('hex')
 const writeJson = async (name, data) => {
@@ -22,12 +24,13 @@ const experience = async () => {
   const references = (await readdir(resolve(skill, 'references'))).filter(name => /^[a-z0-9-]+\.md$/.test(name)).map(name => `references/${name}`)
   const files = Object.fromEntries(await Promise.all(['SKILL.md', 'site-graph.json', ...references].map(async path => [path, await readFile(resolve(skill, path), 'utf8')])))
   const icon = { path: website.icon, dataUrl: `data:image/png;base64,${(await readFile(resolve(skill, website.icon))).toString('base64')}` }
-  return { revision: digest(JSON.stringify({ files, website, icon })), website, files, icon, scriptManifest: './script-manifest.json' }
+  const tools = JSON.parse(await readFile(toolsPath, 'utf8'))
+  return { revision: digest(JSON.stringify({ files, website, icon, tools })), website, files, icon, tools, scriptManifest: './script-manifest.json' }
 }
 
 const options = {
   absWorkingDir: root,
-  entryPoints: { courses: 'src/courses/index.ts', homework: 'src/homework/index.ts', chapters: 'src/chapters/index.ts' },
+  entryPoints: { courses: 'src/courses/index.ts', homework: 'src/homework/index.ts', chapters: 'src/chapters/index.ts', login: 'src/login/index.js' },
   outdir: 'scripts',
   bundle: true,
   format: 'iife',
@@ -48,6 +51,12 @@ const options = {
       await writeJson('experience.json', await experience())
       const revision = digest(JSON.stringify(bundles))
       await writeJson('script-manifest.json', { apiVersion: 1, siteId: 'chaoxing', revision, bundles })
+      if (publish) {
+        await mkdir(resolve(root, 'site-tools'), { recursive: true })
+        for (const [name, bundle] of Object.entries(bundles)) {
+          await writeFile(resolve(root, 'site-tools', name + '.js'), await readFile(resolve(out, bundle.url)))
+        }
+      }
       console.log(`Published ${Object.keys(bundles).join(', ')} ${revision.slice(0, 12)}`)
     })
   } }],
@@ -60,7 +69,7 @@ if (serve) {
   const server = createServer(async (request, response) => {
     try {
       const path = new URL(request.url, 'http://localhost').pathname
-      if (request.method !== 'GET' || !/^\/(?:experience\.json|script-manifest\.json|scripts\/(?:courses|homework|chapters)\.[a-f0-9]{16}\.js)$/.test(path)) {
+      if (request.method !== 'GET' || !/^\/(?:experience\.json|script-manifest\.json|scripts\/(?:courses|homework|chapters|login)\.[a-f0-9]{16}\.js)$/.test(path)) {
         response.writeHead(404).end()
         return
       }

@@ -1,10 +1,12 @@
 # 学习通章节与视频
 
-用户要求完成学习通课程的章节任务时，优先 `browser_start_chapter_tasks`，传用户给的 `course_name`。软件会打开学生课程、进入待完成小节并直接操作播放器。已在同一课程继续时可省略课名，只处理当前指定小节时传 `current_only=true`。
+指定小节可先按 [本地快捷入口](../SKILL.md#本地快捷入口) 匹配课程和小节，使用 `browser_navigate` 打开，再用 `browser_review_chapter` 核对。需要推进任务时，调用 `browser_start_chapter_tasks(current_only=true)`。没有可用链接时走下方的目录流程。
+
+用户要求完成学习通章节任务时，启动一次 `browser_start_chapter_tasks`。整课传 `course_name`，只处理当前小节时传 `current_only=true`。宿主会按顺序处理视频、支持的 PDF/PPT/图书，以及已授权的测验填写和复核。平台确认任务点完成后自动继续。
 
 学生端进入目标小节后，先用 `browser_review_chapter` 核对章节、待完成数和当前任务点。完成本小节用 `browser_complete_chapter(chapter_key)`，每次推进一个任务点或切换本节的页签。用户只要求处理视频时传 `video_only=true`。
 
-主 Agent 会在视频开始后直接等待事件。收到 `video_event` 后复核章节，有剩余任务就继续。若工具仍返回 `watching=true`，用 `browser_finish(watching)`。脚本返回 `needs_quiz` 或 `needs_document` 时，从当前网页处理相应任务，再检查平台的完成标记。目录待完成数为 0 或显示「已完成」时，可确认本章完成。多个指定章节逐节核对。学习通整门课的章节任务在目标学生课程目录用 `browser_open_pending_chapter` 直接打开待完成小节，处理完一节再调用。
+视频结束后，宿主会先核对原任务点的完成标记，再自动推进。本节完成返回 `complete`；整门课经学生目录核对全部完成时返回 `course_complete`。测验返回 `needs_quiz` 时先查看 `quiz` 汇总，再处理需要补题、保存或提交的部分。课件返回 `needs_document` 时核对当前阅读器或平台回执。处理完成后继续同一工作流，保留整课或本节范围。
 
 专用脚本不可用或页面结构需要额外核对时，按最新快照点击指定任务点，确认视频实际播放后用 `browser_watch`。
 
@@ -21,7 +23,7 @@
    播放页可能是多层 iframe：`studentstudy` → `knowledge/cards` → 视频框（按 mid 区分）→ 测验还可能再套一层。快照按框分段。
 5. 用最新 ref 点击指定视频框里的播放，确认时间正常推进后再 `browser_watch`。定位带回的 frameId/loaderId 优先于框名；框已换文档时重新读取，不复用旧 ref。
 6. `browser_wait`。面板出现测验、本节做完、卡住或验证码会结束等待。
-   转入章节测验时先读 `references/homework.md`，按显示题号绑定题干、选项与元素，再作答；不要按元素 ID 大小配题。
+   章节测验和复核的流程见 `references/homework.md`。
 
 ## 坑
 
