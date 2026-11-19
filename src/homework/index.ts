@@ -19,3 +19,11 @@ export function run(request: HomeworkRequest | AnswerRequest | { operation: 'pag
     ...(operation === 'open' && query.trim() && matched.length === 1 ? { selected: matched[0].id } : {}),
   }
 }
+
+export function* workflow({ rows }: { rows: Array<{ status: string }> }): Generator<Record<string, unknown>, Record<string, unknown>, Record<string, unknown>> {
+  for (const [index, row] of rows.entries()) {
+    const receipt = yield { op: row.status === 'ready' ? 'apply' : 'record', index }
+    if (receipt?.ok !== true) return { done: false }
+  }
+  return { done: true }
+}

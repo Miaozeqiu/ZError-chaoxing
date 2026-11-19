@@ -21,7 +21,8 @@ var ZErrorSiteScript = (() => {
   // src/homework/index.ts
   var homework_exports = {};
   __export(homework_exports, {
-    run: () => run
+    run: () => run,
+    workflow: () => workflow
   });
 
   // src/homework/pageRules.ts
@@ -123,6 +124,13 @@ var ZErrorSiteScript = (() => {
       ids: matched.map((item) => item.id),
       ...operation === "open" && query.trim() && matched.length === 1 ? { selected: matched[0].id } : {}
     };
+  }
+  function* workflow({ rows }) {
+    for (const [index, row] of rows.entries()) {
+      const receipt = yield { op: row.status === "ready" ? "apply" : "record", index };
+      if (receipt?.ok !== true) return { done: false };
+    }
+    return { done: true };
   }
   return __toCommonJS(homework_exports);
 })();
