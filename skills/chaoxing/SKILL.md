@@ -1,41 +1,24 @@
 ---
 name: chaoxing
-description: 在 ZError 中登录学习通、浏览学生课程、完成用户指定的章节视频、作业与章节测验。操作学习通网站时使用。
+description: 使用站点仓库的隔离编译工具登录学习通、浏览学生课程、读取和填写作业，推进用户指定的章节。
 license: MIT
-metadata:
-  display-name: 学习通
-  requires: ZError browser, credential and video-wait tools
 ---
 
 # 学习通
 
-仅用于学习通通用流程。需要 ZError 的 `browser_*`、`protect_credentials` 和 Skill 读取能力；缺少工具时说明实际限制，不假定执行成功。
+本站流程由本仓库的 `runtime.json` 提供，软件只执行通用浏览器命令、凭据隔离和权限校验。不要调用旧版平台工具或猜测宿主中有本网站专用能力。
 
-按当前用户目标与最新页面执行，任务清单只记录进度。完成章节默认包括范围内的视频与测验；用户明确排除答题、限制章节或要求暂存时遵守其范围。不要从旧对话推断新的操作授权。
+- 登录调用 `browser_site_chaoxing__login`。账号密码只在聊天中的安全表单填写，等待用户点击「继续」。模型不会读取密码。仅 `loggedIn=true` 表示已核对成功。
+- 返回 `captcha` 时识别附带的验证码原图，携带同一个 `captcha_id` 和 `captcha_code` 再调用。密码错误与验证码失效分开处理，不能重复提交错误密码。验证码变化或文档更换后重新获取。
+- 列表使用 `browser_site_chaoxing__catalog`，`kind` 为 `courses`、`homework` 或 `chapters`。按 `offset` 继续当前页，网页分页用 `next_page`。`open_id` 来自刚读取的条目，按名称打开须唯一匹配。
+- 当前作业或章节测验使用 `browser_site_chaoxing__read_questions`；每批最多八题。用通用题库检索（如当前工具提供）或模型推理得到已核实答案，再用 `browser_site_chaoxing__answer_questions` 填写并回读。不得把填入网页当成答案正确或已交卷。
+- 当前章节使用 `browser_site_chaoxing__study`。`read_only=true` 只复核，`current_only=true` 限定当前小节，`video_only=true` 限定媒体。视频在一次工具调用中等待事件，之后重新检查平台标记。遇到测验或讨论交回 Agent 处理，再继续原用户范围。
+- 返回 `workflowPending=true` 时保留了检查点。恢复先重新读页面，不重放旧 DOM 定位。发布结果不明时不自动再次发送。
 
-登录学习通时，优先调用 `browser_login_chaoxing()`。已登录或成功进入空间时返回 `loggedIn=true`；验证码和滑块需要用户处理。
+细则见 [登录](references/login.md)、[章节与阅读](references/study.md)、[作业与测验](references/homework.md)。
 
-整课章节任务先调用 `browser_start_chapter_tasks(course_name)`，单节传 `current_only=true`。学习通课程或作业先用 `browser_list_courses`、`browser_open_course`、`browser_list_homework` 或 `browser_open_homework` 定位。读题和核对用 `browser_review_homework`，已授权作答用 `browser_answer_homework`。处理章节测验、讨论和提交前按下方参考文件核对范围。
+## 范围与完成依据
 
-## 按需读取
+只处理用户指定的课程、作业、章节及授权操作。域名、frame/loader 与题目指纹每次重新校验。已存在的不同答案或草稿保留。媒体结束、滚到末页、工具正常返回均不等于平台登记完成。页面规则未命中或平台能力不支持时说明阻塞，不猜测、不伪造完成回执。
 
-| 当前任务 | 参考文件 |
-|---|---|
-| 登录、学生课表与进入课程 | [references/login.md](references/login.md) |
-| 章节、视频、监控与连续执行 | [references/study.md](references/study.md) |
-| 课程作业、章节测验与题序核对 | [references/homework.md](references/homework.md) |
-
-[site-graph.json](site-graph.json) 记录页面与嵌套框架的导航关系。图谱是观察线索，实际定位用当前快照中的 ref、frameId 和 loaderId；旧 ref、图谱里的框名和 URL 都不能替代新观察。
-
-## 本地快捷入口
-
-按通用网站经验 `site-learn` 的「快捷入口」规则操作。本站笔记位于 `sites/chaoxing.com/SKILL.md` 的本地经验，所属范围填写课程名，目标填写节号及名称或作业全名。只使用学生端章节或课程作业的顶层地址。核对不到目标时回到「我学的课」，从章节目录或作业列表重新定位。
-
-## 共同约束
-
-- 通过课表定位时从「我学的课」进入并核对学生视角；`/mycourse/tch`、章节编辑或发布控件说明进错教师入口，返回学生课表，不猜 URL。
-- 多层 iframe 的内容、页签与顶层网址可独立变化。操作后核对目标框内容，不能仅凭网址不变判定失败。
-- 账号密码只通过宿主凭据变量填写；不读取回显、不写入脚本、Skill、图谱或诊断文件。验证码交用户处理。
-- 视频按正常播放进度等待结束事件，再继续章节任务；不修改播放时间或伪造完成状态。用户接管或停止后结束当前执行，不自行夺回控制权。
-- 作答前绑定页面题号、完整题干、选项与该题容器 ID；按 DOM 顺序读取数组，不按数字 ID 排题。字体混淆先解码，失败再用模型视觉；无法辨认时报告阻塞。
-- 按真实回执核对用户指定的全部任务。等待用 `browser_watch`、`browser_wait`；完成或真实阻塞用 `browser_finish`，不能只输出“稍后继续”就结束。已提交不擅自重做。
+本地补充经验可以保存用户允许的章节/作业 HTTPS 快捷网址，使用前核对站点、课程和实际落地页。共享仓库不保存用户账号、密码、Cookie、会话地址、真实课程资料或聊天记录。

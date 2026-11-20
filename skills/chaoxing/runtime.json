@@ -1,0 +1,1477 @@
+{
+  "apiVersion": 2,
+  "bundle": {
+    "code": "\"use strict\";var ZErrorSitePackage=(()=>{var F=Object.defineProperty;var re=Object.getOwnPropertyDescriptor;var le=Object.getOwnPropertyNames;var se=Object.prototype.hasOwnProperty;var ce=(e,t)=>{for(var n in t)F(e,n,{get:t[n],enumerable:true})};var ae=(e,t,n,i)=>{if(t&&typeof t===\"object\"||typeof t===\"function\"){for(let r of le(t))if(!se.call(e,r)&&r!==n)F(e,r,{get:()=>t[r],enumerable:!(i=re(t,r))||i.enumerable})}return e};var de=e=>ae(F({},\"__esModule\",{value:true}),e);var pe={};ce(pe,{create:()=>fe});var z=e=>{const t=/^https:\\/\\/([^/:?#]+)([^?#]*)(?:\\?([^#]*))?/.exec(e);return t?{origin:\"https://\"+t[1],host:t[1],path:t[2]||\"/\",query:t[3]||\"\"}:{origin:\"\",host:\"\",path:\"\",query:\"\"}};var A=(e,t)=>e&&t&&e.frameId===t.frameId&&e.loaderId===t.loaderId&&e.url===t.url;var l=(e,t=\"\",n={})=>({status:e,message:t,...n});function*y(e,t={}){const n=yield{op:e,args:t};if(!n||n.ok===false||n.error||n.denied)throw new Error(String(n?.error||n?.reason||e+\" failed\"));return n}function*j(){const e=yield*y(\"document.list\");if(!e.documents?.length)throw new Error(\"\\u6CA1\\u6709\\u53EF\\u64CD\\u4F5C\\u7684\\u7AD9\\u5185\\u6587\\u6863\");return e.documents}function*R(e,t,n=40,i=0){if(!t)return{nodes:[],total:0,truncated:false};return yield*y(\"document.query\",{document:e,selector:t,limit:n,...i?{offset:i}:{}})}function*p(e,t,n=40,i=0){return(yield*R(e,t,n,i)).nodes||[]}function*k(e,t,n=false){const i=(yield*p(e,t)).filter(r=>!n||r.visible);return i.length===1?i[0]:void 0}function*v(e,t){if(!t?.selector||!t.visible||t.disabled)throw new Error(\"\\u672A\\u786E\\u8BA4\\u552F\\u4E00\\u53EF\\u64CD\\u4F5C\\u63A7\\u4EF6\");return yield*y(\"document.click\",{document:e,selector:t.selector})}function*q(e=250){return yield*y(\"browser.wait\",{ms:e})}function*B(e){return yield*y(\"workflow.checkpoint\",{state:e})}var _=(e,t)=>e.selector+\" :is(\"+t+\")\";var D=e=>{const t=JSON.stringify(e);let n=2166136261,i=5381;for(let r=0;r<t.length;r++){n=Math.imul(n^t.charCodeAt(r),16777619);i=Math.imul(i,33)^t.charCodeAt(r)}return(n>>>0).toString(16)+\"-\"+(i>>>0).toString(16)};var C=(e,t,n)=>({kind:e,selector:t,pattern:n});function J({origin:e,path:t,matches:n}){const i=[\"https://i.chaoxing.com\",\"https://i.mooc.chaoxing.com\"].includes(e);let r;if(i&&/^\\/(?:$|(?:space|base)(?:\\/|$))/i.test(t)){r=[C(\"visible\",'#zne_kc_icon, #zne_sy_icon, a[href*=\"logout\" i], a[href*=\"loginOut\" i]'),C(\"frame_path\",\"iframe#frame_content[src]\")];if(!n)return{rules:r};return{kind:n[0]||/^\\/base\\/?$/i.test(t)&&typeof n[1]===\"string\"&&/^https:\\/\\/[^/]+\\.chaoxing\\.com\\/visit\\/(?:interaction|courses)\\/?$/i.test(n[1])?\"space\":\"loading\"}}if(e!==\"https://passport2.chaoxing.com\")return n?{kind:\"other\"}:{rules:[]};if(!/^\\/login\\/?$/i.test(t))return n?{kind:\"passport\"}:{rules:[]};const s=\"#phoneMsg, #pwdMsg, #loginTip\";r=[C(\"text\",s,\"\\u9A8C\\u8BC1\\u7801|\\u6ED1\\u5757|\\u5B89\\u5168\\u9A8C\\u8BC1|\\u4EBA\\u673A\\u9A8C\\u8BC1\"),C(\"visible\",'#vercode, .geetest_panel, .geetest_slider, .geetest_captcha, .nc-container, iframe[src*=\"captcha\" i]'),C(\"hidden_flag\",\"input#needVcode[type=hidden]\"),C(\"editable\",\"input#phone:is([type=text], [type=tel], [type=email], [type=number], :not([type]))\"),C(\"editable\",'input#pwd[type=\"password\"]'),C(\"visible\",\"#loginBtn:not(:disabled, [aria-disabled=true])\"),C(\"text\",s,\"\\\\S\"),{kind:\"parameter\",selector:\"newversion\",pattern:\"true\"}];if(!n)return{rules:r};if(n[0]||n[1]||n[2])return{kind:\"challenge\"};return{kind:n[3]&&n[4]&&n[5]?\"form\":\"loading\",rejected:n[6]===true,modern:n[7]===true}}var N={directory:{target:'a[title=\"\\u7AE0\\u8282\"][data-url*=\"/mycourse/studentcourse\"]',row:'.chapter_item[id^=\"cur\"] > .catalog_title[role=\"link\"]',name:\".catalog_name\",number:\".catalog_sbar\",task:\".catalog_task\",hiddenCount:\".knowledgeJobCount\",badge:\".catalog_points_yi\",completed:\".icon_yiwanc\"},sidebar:{target:'#coursetree .posCatalog_select[id^=\"cur\"]:not(.firstLayer)',row:'.posCatalog_select[id^=\"cur\"]',active:\".posCatalog_active\",name:\".posCatalog_name\",number:\".posCatalog_sbar\",task:\"\",hiddenCount:\".jobUnfinishCount\",badge:\".orangeNew\",completed:\".icon_Completed\"},completionLabel:\"\\u5DF2\\u5B8C\\u6210\",cards:'iframe[info=\"card\"], iframe#iframe',cardTarget:\"knowledge/cards\",tabs:\"#prev_tab .prev_ul > li[cardid]\",activeTab:\".active\",disabledTab:'.disabled, [aria-disabled=\"true\"]',tabPrefix:\"dct\",body:\"#pageDiv.ans-cc, .ans-cc\",jobIcon:\".ans-job-icon\",jobContainer:\".ans-attach-ct\",jobDoneIcon:\".ans-job-icon-finish, .ans-job-icon-finished, .ans-job-done\",jobDoneBox:\".ans-job-finished\",player:{box:\".video-js\",media:\".video-js video, .video-js audio\",controls:[\".vjs-play-control.vjs-paused\",\".vjs-paused .vjs-big-play-button\"]},jobDoneLabel:\"\\u4EFB\\u52A1\\u70B9\\u5DF2\\u5B8C\\u6210\"};var I={observe:J,formHost:\"passport2.chaoxing.com\",modern:true,entry:\"https://passport2.chaoxing.com/login?fid=&newversion=true&refer=https%3A%2F%2Fi.chaoxing.com\",account:\"input#phone\",password:'input#pwd[type=\"password\"]',submit:\"#loginBtn:not(:disabled,[aria-disabled=true])\"};var V={courses:{rows:\"#courselistArea li, .courselistArea li, .course-list .course-item\",heading:\":is(h3,h4,.course-name,.courseName)\",entry:\"#zne_kc_icon\"},homework:{rows:\".bottomList li[data]\",heading:\":is(.overHidden2,.titTxt,.workName,.work-title)\",entry:'a[title=\"\\u4F5C\\u4E1A\"]',next:\".pageDiv .xl-nextPage:not(.xl-disabled)\"},chapters:{rows:N.directory.row+\", \"+N.sidebar.target,heading:\":is(.catalog_name,.posCatalog_name)\",entry:'a[title=\"\\u7AE0\\u8282\"]'}};var w={rows:\".questionLi, .singleQuesId\",heading:\":is(.mark_name,.Zy_TItle,h3)\",typeInput:'input[id^=\"answertype\"]',codes:{0:\"single\",1:\"multiple\",2:\"completion\",3:\"judgement\"},types:{single:\"\\u5355\\u9009|\\u5355\\u9879\\u9009\\u62E9\",multiple:\"\\u591A\\u9009|\\u591A\\u9879\\u9009\\u62E9\",judgement:\"\\u5224\\u65AD\",completion:\"\\u586B\\u7A7A\"},options:\":is(.answerBg,.Zy_ulTop > li)\",fields:'input[type=\"text\"], textarea, [contenteditable=\"true\"]',selectedClass:\"(?:^|\\\\s)(?:check_answer|check_answer_dx|choice_answer|checked|selected|active|cur|is-checked)(?:\\\\s|$)\",visual:'img,svg,canvas,math,mjx-container,.MathJax,.font-cxsecret,[class*=\"cxsecret\"]',review:\".mark_answer\"};var h={rows:N.sidebar.target+\", \"+N.directory.row,active:\".posCatalog_active\",done:\".icon_Completed, .icon_yiwanc\",remaining:\".catalog_task, .orangeNew, .catalog_points_yi\",tabs:N.tabs,selectedTab:\"(?:^|\\\\s)active(?:\\\\s|$)\",disabledTab:\"(?:^|\\\\s)disabled(?:\\\\s|$)\",media:\".video-js video, .video-js audio, video, audio\",question:w.rows,discussion:\"#subPageMain .topicDetail_detail\"};var P={topic:\"#subPageMain .topicDetail_detail .topicDetail_title, #subPageMain .topicDetail_detail .topicDetail_main > .richText\",replies:\"#subPageMain .topicDetail_replyWrap .topicDetail_replyList .topicDetail_replyItem .topicReply_right > .replyContent\",input:\"#subPageMain .topicDetail_editContainer .replyEdit .textareawrap > textarea\",submit:\"#subPageMain .topicDetail_editContainer .replyEditBtnGroup .addReply:not(.jb_btn_92_disable)\"};var M={next:'#next, #nextPage, #nextpage, #nextpagebtn, #next-page, #reader .reader-next, .swiper-button-next:not(.swiper-button-disabled), #img .mkeRbtn, [aria-label=\"\\u4E0B\\u4E00\\u9875\"], [title=\"\\u4E0B\\u4E00\\u9875\"]',viewport:\"#img.imglook, #viewerContainer, #reader, #ReadWeb\",pageSelect:\"#pageSelector, #pageSelect\",marker:'#pageNumber, #pageNum, #currentPage, #pagejump, [aria-current=\"page\"], .swiper-slide-active, #numPages, #img .documentImg'};function*S(e=false){const t=yield*j(),n=t[0],i=z(n.url);const r={operation:\"observe\",origin:i.origin,path:i.path,captureCaptcha:e};const s=I.observe(r).rules;const m=[];let u;for(const a of s){if(a.kind===\"parameter\"){m.push(i.query.split(\"&\").some(d=>d===a.selector+\"=\"+a.pattern));continue}if(a.kind===\"image\"){const d=yield*k(n,a.selector,true);if(d){const c=yield{op:\"document.image\",args:{document:n,selector:d.selector}};if(c?.ok)u=c}m.push(Boolean(u));continue}const o=yield*p(n,a.selector);m.push(a.kind===\"frame_path\"?o.length===1?o[0].attributes.src:\"\":a.kind===\"hidden_flag\"?o.some(d=>d.valueIsTrue):a.kind===\"text\"?o.some(d=>d.visible&&new RegExp(a.pattern).test(d.text.trim())):o.some(d=>d.visible&&(a.kind!==\"editable\"||!d.disabled)))}return{...I.observe({...r,matches:m}),document:n,...i,image:u}}var O=e=>e.image?JSON.stringify([e.document.frameId,e.document.loaderId,e.document.url,e.image.image_id]):\"\";function L(e){if(!e.image)return l(\"verification_unavailable\",\"\\u9A8C\\u8BC1\\u7801\\u56FE\\u7247\\u6682\\u65F6\\u65E0\\u6CD5\\u8BFB\\u53D6\\uFF0C\\u8BF7\\u5237\\u65B0\\u9875\\u9762\\u540E\\u91CD\\u8BD5\\u3002\",{loggedIn:false});return l(\"captcha\",\"\\u8BF7\\u8BC6\\u522B\\u9644\\u5E26\\u7684\\u9A8C\\u8BC1\\u7801\\u539F\\u56FE\\uFF0C\\u4F7F\\u7528\\u540C\\u4E00\\u4E2A captcha_id \\u548C captcha_code \\u518D\\u8C03\\u7528\\u767B\\u5F55\\u5DE5\\u5177\\u3002\",{loggedIn:false,captchaImage:e.image.image,captcha_id:O(e)})}function*Q(e,t){const n=yield*y(\"credentials.request\",{document:e.document,...t?{replaceRejected:true}:{}});if(!n.credential_id)throw new Error(\"\\u51ED\\u636E\\u8868\\u5355\\u672A\\u5B8C\\u6210\");for(const i of[\"account\",\"password\"]){yield*y(\"credentials.fill\",{document:e.document,selector:I[i],credential_id:n.credential_id,field:i})}}function*H(e){const t=yield*S(Boolean(e.image));if(!A(t.document,e.document)||![\"form\",\"rejected\"].includes(t.kind))return l(\"stale\",\"\\u767B\\u5F55\\u8868\\u5355\\u5DF2\\u53D8\\u5316\\uFF0C\\u8BF7\\u91CD\\u65B0\\u8BFB\\u53D6\\u3002\",{loggedIn:false});yield*v(t.document,yield*k(t.document,I.submit,true));for(let n=0;n<16;n++){yield*q(375);const i=yield*S();if(i.kind===\"space\")return l(\"logged_in\",\"\\u5DF2\\u6838\\u5BF9\\u7AD9\\u70B9\\u7684\\u767B\\u5F55\\u6807\\u8BB0\\u3002\",{loggedIn:true});if(i.kind===\"reset\")return l(\"password_reset\",\"\\u7F51\\u7AD9\\u8981\\u6C42\\u4FEE\\u6539\\u5BC6\\u7801\\uFF0C\\u8BF7\\u5728\\u7F51\\u9875\\u5B8C\\u6210\\u3002\",{loggedIn:false});if(i.kind===\"challenge\")return l(\"verification_required\",\"\\u7F51\\u7AD9\\u8981\\u6C42\\u4EBA\\u5DE5\\u9A8C\\u8BC1\\uFF0C\\u8BF7\\u5728\\u7F51\\u9875\\u5904\\u7406\\u3002\",{loggedIn:false});if(n>=2&&(i.rejection===\"credentials\"||i.rejected)){yield*Q(i,true);const r=yield*S(true);if(r.challenge)return L(r);return l(\"credentials_replaced\",\"\\u5DF2\\u5B89\\u5168\\u66F4\\u6362\\u51ED\\u636E\\uFF0C\\u8BF7\\u518D\\u6B21\\u8C03\\u7528\\u767B\\u5F55\\u5DE5\\u5177\\u6838\\u5BF9\\u5E76\\u63D0\\u4EA4\\u3002\",{loggedIn:false})}if(i.rejection===\"captcha\")return l(\"captcha_rejected\",\"\\u7F51\\u7AD9\\u63D0\\u793A\\u9A8C\\u8BC1\\u7801\\u9519\\u8BEF\\u6216\\u5931\\u6548\\uFF0C\\u8BF7\\u5237\\u65B0\\u9A8C\\u8BC1\\u7801\\u540E\\u91CD\\u65B0\\u8BC6\\u522B\\u3002\",{loggedIn:false});if(i.kind===\"rejected\"&&i.rejection!==\"credentials\")return l(\"login_rejected\",\"\\u7F51\\u7AD9\\u8FD4\\u56DE\\u767B\\u5F55\\u9519\\u8BEF\\uFF0C\\u8BF7\\u6838\\u5BF9\\u7F51\\u9875\\u63D0\\u793A\\u3002\",{loggedIn:false})}return l(\"pending\",\"\\u5DF2\\u63D0\\u4EA4\\uFF0C\\u4F46\\u5C1A\\u672A\\u89C2\\u5BDF\\u5230\\u767B\\u5F55\\u6210\\u529F\\u6807\\u8BB0\\u3002\",{loggedIn:false})}function*W(e){if(Boolean(e.captcha_id)!==Boolean(e.captcha_code))return l(\"invalid_captcha\",\"captcha_id \\u4E0E captcha_code \\u5FC5\\u987B\\u4E00\\u8D77\\u63D0\\u4F9B\\u3002\",{loggedIn:false});if(e.captcha_code&&!/^[a-z\\d]{5}$/i.test(e.captcha_code))return l(\"invalid_captcha\",\"\\u9A8C\\u8BC1\\u7801\\u5E94\\u4E3A\\u4E94\\u4F4D\\u5B57\\u6BCD\\u6216\\u6570\\u5B57\\u3002\",{loggedIn:false});let t=yield*S(Boolean(e.captcha_code));if(t.kind===\"space\")return l(\"logged_in\",\"\\u5F53\\u524D\\u5DF2\\u7ECF\\u767B\\u5F55\\u3002\",{loggedIn:true});if(e.captcha_code){if(!t.challenge||O(t)!==e.captcha_id)return l(\"stale\",\"\\u9A8C\\u8BC1\\u7801\\u6216\\u6587\\u6863\\u5DF2\\u66F4\\u65B0\\uFF0C\\u8BF7\\u91CD\\u65B0\\u83B7\\u53D6\\u9A8C\\u8BC1\\u7801\\u3002\",{loggedIn:false});const i=[];for(const s of[I.account,I.password])i.push(yield*k(t.document,s,true));if(!i.every(s=>s?.hasValue)){yield*Q(t,e.replace_credentials===true);return L(yield*S(true))}yield*y(\"document.fill\",{document:t.document,selector:I.captcha,text:e.captcha_code});const r=yield*S(true);if(!A(r.document,t.document)||O(r)!==e.captcha_id)return l(\"stale\",\"\\u586B\\u5199\\u65F6\\u9A8C\\u8BC1\\u7801\\u5DF2\\u5237\\u65B0\\uFF0C\\u8BF7\\u91CD\\u65B0\\u8BC6\\u522B\\u3002\",{loggedIn:false});return yield*H(r)}if(t.kind===\"challenge\")return l(\"verification_required\",\"\\u7F51\\u7AD9\\u8981\\u6C42\\u4EBA\\u5DE5\\u9A8C\\u8BC1\\uFF0C\\u8BF7\\u5728\\u7F51\\u9875\\u5904\\u7406\\u3002\",{loggedIn:false});if(t.kind===\"reset\")return l(\"password_reset\",\"\\u7F51\\u7AD9\\u8981\\u6C42\\u4FEE\\u6539\\u5BC6\\u7801\\uFF0C\\u8BF7\\u5728\\u7F51\\u9875\\u5B8C\\u6210\\u3002\",{loggedIn:false});if(t.kind===\"guest\"&&I.homeLink){const i=(yield*p(t.document,I.homeLink)).filter(r=>r.visible&&r.text.trim()===\"\\u8BF7\\u767B\\u5F55\");if(i.length!==1)return l(\"unrecognized\",\"\\u6CA1\\u6709\\u786E\\u8BA4\\u552F\\u4E00\\u7684\\u767B\\u5F55\\u5165\\u53E3\\u3002\",{loggedIn:false});yield*v(t.document,i[0])}else if(t.host!==I.formHost){yield*y(\"document.navigate\",{document:t.document,url:I.entry})}else if(I.modern&&!t.modern){yield*y(\"document.navigate\",{document:t.document,url:I.entry})}for(let i=0;i<12&&![\"form\",\"rejected\"].includes(t.kind);i++){yield*q();t=yield*S();if(t.kind===\"space\")return l(\"logged_in\",\"\\u5DF2\\u6838\\u5BF9\\u767B\\u5F55\\u72B6\\u6001\\u3002\",{loggedIn:true});if(t.kind===\"challenge\")return l(\"verification_required\",\"\\u8BF7\\u5728\\u7F51\\u9875\\u5B8C\\u6210\\u9A8C\\u8BC1\\u3002\",{loggedIn:false})}if(![\"form\",\"rejected\"].includes(t.kind))return l(\"unrecognized\",\"\\u5C1A\\u672A\\u786E\\u8BA4\\u767B\\u5F55\\u8868\\u5355\\uFF0C\\u8BF7\\u6838\\u5BF9\\u5F53\\u524D\\u9875\\u9762\\u3002\",{loggedIn:false});yield*Q(t,e.replace_credentials===true||t.rejection===\"credentials\"||t.rejected===true);const n=yield*S(true);if(!A(n.document,t.document))return l(\"stale\",\"\\u5B89\\u5168\\u586B\\u5199\\u540E\\u8868\\u5355\\u5DF2\\u6539\\u53D8\\uFF0C\\u8BF7\\u91CD\\u65B0\\u6838\\u5BF9\\u3002\",{loggedIn:false});if(n.challenge)return L(n);if(n.kind===\"challenge\")return l(\"verification_required\",\"\\u7F51\\u7AD9\\u8981\\u6C42\\u4EBA\\u5DE5\\u9A8C\\u8BC1\\uFF0C\\u8BF7\\u5728\\u7F51\\u9875\\u5904\\u7406\\u3002\",{loggedIn:false});return yield*H(n)}function*K(e){const t=V[e.kind];if(!t)return l(\"unsupported\",\"\\u8BE5\\u7C7B\\u578B\\u6CA1\\u6709\\u4ED3\\u5E93\\u89C4\\u5219\\u3002\");let n=yield*j();if(e.next_page){let i=false;for(const r of n){if(!t.next)break;const s=yield*k(r,t.next,true);if(s&&!s.disabled){yield*v(r,s);i=true;break}}if(!i)return l(\"no_next_page\",\"\\u672A\\u89C2\\u5BDF\\u5230\\u53EF\\u7528\\u7684\\u4E0B\\u4E00\\u9875\\u63A7\\u4EF6\\u3002\");yield*q(250);n=yield*j()}for(const i of n){const r=yield*R(i,t.rows,40,e.offset||0);if(!r.nodes.length)continue;const s=[];for(const u of r.nodes){if(!u.selector)continue;const a=t.heading?yield*p(i,_(u,t.heading),2):[];const o=(a[0]?.text||u.attributes.title||u.text).replace(/\\s+/g,\" \").trim().slice(0,320);const d=t.completed&&(yield*p(i,_(u,t.completed),1)).length>0;s.push({id:D([i,u.selector,o]),title:o,kind:e.kind,status:d?\"complete\":u.text.replace(/\\s+/g,\" \").trim().slice(0,500),url:/^https:\\/\\//.test(u.attributes.href||\"\")?u.attributes.href:\"\",node:u})}const m=s.map(({node:u,...a})=>a);if(e.open_id||e.title){const u=o=>o.replace(/\\s+/g,\"\").normalize(\"NFKC\");let a=s.filter(o=>e.open_id?o.id===e.open_id:u(o.title)===u(e.title));if(!a.length&&e.title)a=s.filter(o=>u(o.title).includes(u(e.title)));if(a.length!==1)return l(\"ambiguous\",\"\\u6CA1\\u6709\\u552F\\u4E00\\u5339\\u914D\\uFF1B\\u8BF7\\u6309\\u8FD4\\u56DE\\u7684\\u540D\\u79F0\\u548C id \\u9009\\u62E9\\u3002\",{items:m,total:r.total});yield*v(i,a[0].node);return l(\"opened\",\"\\u5DF2\\u70B9\\u51FB\\u521A\\u8BFB\\u53D6\\u7684\\u552F\\u4E00\\u6761\\u76EE\\uFF1B\\u8BF7\\u7528\\u5BF9\\u5E94\\u5DE5\\u5177\\u6838\\u5BF9\\u843D\\u5730\\u9875\\u3002\",{items:m.filter(o=>o.id===a[0].id)})}return l(\"listed\",\"\\u5F53\\u524D\\u7F51\\u9875\\u5217\\u8868\\uFF0C\\u672A\\u628A\\u672A\\u8BFB\\u53D6\\u7684\\u5206\\u9875\\u89C6\\u4E3A\\u5DF2\\u5B8C\\u6210\\u3002\",{items:m,total:r.total,next_offset:r.truncated?(e.offset||0)+r.nodes.length:-1})}for(const i of n){if(!t.entry)break;const r=yield*k(i,t.entry,true);if(r){yield*v(i,r);return l(\"navigated\",\"\\u5DF2\\u6253\\u5F00\\u5217\\u8868\\u5165\\u53E3\\uFF0C\\u8BF7\\u91CD\\u65B0\\u8BFB\\u53D6\\u5217\\u8868\\u3002\")}}return l(\"not_found\",\"\\u5F53\\u524D\\u9875\\u9762\\u672A\\u8BC6\\u522B\\u5230\\u8BE5\\u5217\\u8868\\uFF1B\\u8BF7\\u5148\\u6253\\u5F00\\u5BF9\\u5E94\\u5B66\\u751F\\u8BFE\\u7A0B\\u9875\\u9762\\u3002\")}var Z=e=>e.checked||e.attributes[\"aria-checked\"]===\"true\"||new RegExp(w.selectedClass).test(e.attributes.class);function*U(e,t){const n=yield*p(e,_(t,w.heading),2);const i=n.map(g=>g.text.trim()).filter(Boolean).join(\" \").slice(0,2e3);let r=\"unknown\";for(const[g,x]of Object.entries(w.types))if(new RegExp(x).test(i.slice(0,150))){r=g;break}if(w.typeInput){const g=yield*k(e,_(t,w.typeInput));if(g)for(const[x,T]of Object.entries(w.codes)){const E=yield*y(\"document.compare\",{document:e,selector:g.selector,text:x});if(E.matches){r=T;break}}}const s=yield*p(e,_(t,w.options),16);const m=yield*p(e,_(t,\"input, [aria-checked], .num_option, .before\"),40);const u=s.map((g,x)=>{const T=m.filter($=>$.selector.startsWith(g.selector+\" > \"));const E=T.find($=>/^[A-H]$/.test($.text.trim()))?.text.trim()||/^([A-H])(?:[\\s.、．)）]|$)/.exec(g.text.trim())?.[1];return{key:E||String.fromCharCode(65+x),text:g.text.trim().slice(0,400),selected:Z(g)||T.some(Z),node:g}});const a=yield*p(e,_(t,w.fields),16);const o=(yield*p(e,_(t,w.visual),1)).length>0;const d=new Set(u.map(g=>g.key)).size!==u.length||!i||o||r===\"unknown\"||/材料题|完形|完型|听力|简答|论述/.test(i.slice(0,100))||(r===\"completion\"?!a.length:u.length<2||u.length>16);const c=w.review?yield*p(e,_(t,w.review),1):[];const f=u.map(({node:g,...x})=>x);const b=JSON.stringify([e.frameId,e.loaderId,e.url,t.index,D([i,r,f.map(({key:g,text:x})=>({key:g,text:x})),a.length])]);return{id:b,number:t.index,stem:i,type:r,supported:!d,visual:o,options:f,blanks:a.map((g,x)=>({index:x+1,filled:g.hasValue})),reviewAnswer:c[0]?.text.trim().slice(0,2e3)||\"\",_options:u,_fields:a,_document:e,_row:t}}var ue=({_options:e,_fields:t,_document:n,_row:i,...r})=>r;function*X(e){const t=yield*j();for(const n of t){const i=yield*R(n,w.rows,e.limit||4,e.offset||0);if(!i.nodes.length)continue;const r=[];for(const s of i.nodes){if(s.selector)r.push(ue(yield*U(n,s)))}return l(\"questions\",\"\\u4EC5\\u8FD4\\u56DE\\u672C\\u6279\\u9898\\u76EE\\u3002\\u542B\\u56FE\\u7247\\u3001\\u6DF7\\u6DC6\\u5B57\\u4F53\\u6216\\u4E0D\\u652F\\u6301\\u9898\\u578B\\u65F6\\u4E0D\\u81EA\\u52A8\\u586B\\u5199\\uFF1B\\u7A7A\\u683C\\u4EC5\\u8FD4\\u56DE\\u662F\\u5426\\u6709\\u4F5C\\u7B54\\u3002\",{questions:r,total:i.total,next_offset:i.truncated?(e.offset||0)+i.nodes.length:-1})}return l(\"not_found\",\"\\u5F53\\u524D\\u6388\\u6743\\u6587\\u6863\\u4E2D\\u6CA1\\u6709\\u8BC6\\u522B\\u5230\\u4F5C\\u4E1A\\u6216\\u7AE0\\u8282\\u6D4B\\u9A8C\\u3002\")}function*G(e){let t;try{t=JSON.parse(e)}catch{return null}if(!Array.isArray(t)||t.length!==5||!Number.isSafeInteger(t[3])||t[3]<1||t[3]>1e4)return null;const n=(yield*j()).find(s=>s.frameId===t[0]&&s.loaderId===t[1]&&s.url===t[2]);if(!n)return null;const[i]=yield*p(n,w.rows,1,t[3]-1);if(!i?.selector)return null;const r=yield*U(n,i);return r.id===e?r:null}function*Y(e){const t=[];for(const n of e.answers){const i=yield*G(n.question_id);const r=o=>t.push({id:n.question_id,title:i?.stem.slice(0,200)||\"\",kind:\"question\",status:o,url:\"\"});if(!i){r(\"stale\");continue}if(!i.supported){r(\"unsupported\");continue}const s=i._document;if(i.type===\"completion\"){if(n.choices?.length||!n.blanks?.length||n.blanks.length!==i._fields.length||n.blanks.some(c=>!c.trim()||c.length>4e3)){r(\"invalid_answer\");continue}let o=false;for(let c=0;c<i._fields.length;c++){const f=i._fields[c];if(f.hasValue&&!(yield*y(\"document.compare\",{document:s,selector:f.selector,text:n.blanks[c]})).matches)o=true}if(o){r(\"existing_answer_conflict\");continue}for(let c=0;c<i._fields.length;c++){if(!i._fields[c].hasValue)yield*y(\"document.fill\",{document:s,selector:i._fields[c].selector,text:n.blanks[c]})}let d=true;for(let c=0;c<i._fields.length;c++){if(!(yield*y(\"document.compare\",{document:s,selector:i._fields[c].selector,text:n.blanks[c]})).matches)d=false}r(d?\"verified\":\"unconfirmed\");continue}const m=n.choices||[],u=[...new Set(m)];if(n.blanks?.length||!m.length||m.length!==u.length||i.type!==\"multiple\"&&m.length!==1||m.some(o=>!i.options.some(d=>d.key===o))){r(\"invalid_answer\");continue}if(i.options.some(o=>o.selected&&!m.includes(o.key))){r(\"existing_answer_conflict\");continue}for(const o of i._options)if(m.includes(o.key)&&!o.selected)yield*v(s,o.node);const a=yield*G(n.question_id);r(a&&a.options.every(o=>o.selected===m.includes(o.key))?\"verified\":\"unconfirmed\")}return l(\"answers_reviewed\",\"\\u5DF2\\u9010\\u9898\\u56DE\\u8BFB\\uFF1Bverified \\u4EC5\\u8868\\u793A\\u7F51\\u9875\\u5B9E\\u586B\\u4E00\\u81F4\\u3002\\u672A\\u4FDD\\u5B58\\u3001\\u4EA4\\u5377\\u6216\\u63D0\\u4EA4\\u6574\\u4EFD\\u4F5C\\u4E1A\\u3002\",{items:t})}function*ee(){const e=yield*j();for(const t of e){const n=yield*p(t,\":is(\"+h.rows+\")\"+h.active,2);if(n.length!==1)continue;const i=n[0];let r=(yield*p(t,_(i,h.done),1)).length>0;if(r&&h.completionScope===\"tabs\"){const s=yield*p(t,h.tabs,40);for(const m of s){if(!m.disabled&&!(yield*p(t,_(m,h.done),1)).length){r=false;break}}}return{all:e,document:t,row:i,complete:r,key:D([t.url,i.attributes.id,i.text])}}return{all:e,complete:false,key:\"\"}}function*te(e,t){const n=yield*p(e,M.marker,8);const i=(yield*p(e,M.viewport,4)).filter(o=>o.visible&&o.scroll?.max>0);const r=(yield*p(e,M.next,4)).filter(o=>o.visible&&!o.disabled&&o.attributes[\"aria-disabled\"]!==\"true\");const s=M.pageSelect?yield*k(e,M.pageSelect,true):void 0;if(!n.length&&!i.length&&!r.length&&!s)return null;if(t.read_only)return l(\"document\",\"\\u5DF2\\u8BC6\\u522B\\u8BFE\\u4EF6\\u9605\\u8BFB\\u5668\\u3002\",{items:n.map(o=>({id:o.selector,title:o.text.slice(0,300),kind:\"page\",status:\"\",url:\"\"}))});const m=/(?:^|&)timing=(\\d+)(?:&|$)/.exec(z(e.url).query);const u=m?Number(m[1]):0;if(u>60)return l(\"reading_wait\",\"\\u6B64\\u8BFE\\u4EF6\\u8981\\u6C42\\u8F83\\u957F\\u505C\\u7559\\u65F6\\u95F4\\uFF0C\\u8BF7\\u4FDD\\u6301\\u9605\\u8BFB\\u5668\\u6253\\u5F00\\u540E\\u7EE7\\u7EED\\u3002\",{complete:false});for(let o=0;o<u;o+=10)yield*q(Math.min(10,u-o)*1e3);if(r.length===1){yield*v(e,r[0]);yield*q(250);return l(\"document_advanced\",\"\\u5DF2\\u70B9\\u51FB\\u9605\\u8BFB\\u5668\\u4E0B\\u4E00\\u9875\\uFF0C\\u5B8C\\u6210\\u72B6\\u6001\\u4ECD\\u9700\\u5E73\\u53F0\\u6807\\u8BB0\\u786E\\u8BA4\\u3002\",{complete:false})}if(s){const o=yield*p(e,s.selector+\" option\",40);const d=o.findIndex(c=>c.selected);if(d>=0&&d+1<o.length){yield*y(\"document.select\",{document:e,selector:s.selector,index:d+2});return l(\"document_advanced\",\"\\u5DF2\\u5207\\u6362\\u9605\\u8BFB\\u9875\\u3002\",{complete:false})}}const a=i.find(o=>o.scroll.top+4<o.scroll.max);if(a){yield*y(\"document.scroll\",{document:e,selector:a.selector,amount:Math.min(2e3,Math.max(100,Math.floor(a.scroll.viewport*.8)))});return l(\"document_advanced\",\"\\u5DF2\\u6EDA\\u52A8\\u9605\\u8BFB\\u5668\\uFF0C\\u5B8C\\u6210\\u72B6\\u6001\\u4ECD\\u9700\\u5E73\\u53F0\\u786E\\u8BA4\\u3002\",{complete:false})}return l(\"awaiting_credit\",\"\\u9605\\u8BFB\\u5668\\u5DF2\\u65E0\\u53EF\\u786E\\u8BA4\\u7684\\u4E0B\\u4E00\\u9875\\uFF0C\\u5C1A\\u672A\\u5C06\\u5176\\u89C6\\u4E3A\\u7AE0\\u8282\\u5B8C\\u6210\\u3002\",{complete:false})}function*ie(e){const t=yield*j();for(const n of t){const i=yield*te(n,e);if(i)return i}return l(\"not_found\",\"\\u6CA1\\u6709\\u8BC6\\u522B\\u5230\\u652F\\u6301\\u7684\\u8BFE\\u4EF6\\u9605\\u8BFB\\u5668\\u3002\")}function*ne(e){let t=\"\",n=0,i=0;for(let r=0;r<24;r++){let s=yield*ee();if(e.read_only)return l(\"chapter\",\"\\u5DF2\\u6309\\u5F53\\u524D\\u5E73\\u53F0\\u6807\\u8BB0\\u590D\\u6838\\u7AE0\\u8282\\u3002\",{complete:s.complete});if(s.complete){if(e.current_only)return l(\"chapter_complete\",\"\\u5DF2\\u89C2\\u5BDF\\u5230\\u5F53\\u524D\\u7AE0\\u8282\\u7684\\u5B8C\\u6210\\u56FE\\u6807\\u3002\",{complete:true});let o=s.document,d=s.row;if(h.directoryRows){d=void 0;for(const g of s.all){const x=yield*k(g,h.directoryActive,true);if(x){o=g;d=x;break}}}if(!d)return l(\"directory_unavailable\",\"\\u5F53\\u524D\\u8282\\u5DF2\\u5B8C\\u6210\\uFF0C\\u4F46\\u5C1A\\u672A\\u786E\\u8BA4\\u5176\\u5728\\u8BFE\\u7A0B\\u76EE\\u5F55\\u4E2D\\u7684\\u4F4D\\u7F6E\\u3002\",{complete:true});const c=yield*p(o,h.directoryRows||h.rows,40);const f=c.findIndex(g=>g.selector===d.selector);if(f<0)return l(\"directory_unavailable\",\"\\u5F53\\u524D\\u5C0F\\u8282\\u4E0D\\u5728\\u5DF2\\u8BFB\\u53D6\\u7684\\u76EE\\u5F55\\u8303\\u56F4\\u4E2D\\uFF0C\\u8BF7\\u91CD\\u65B0\\u8BFB\\u53D6\\u76EE\\u5F55\\u3002\",{complete:true});let b;for(const g of c.slice(Math.max(0,f+1))){if(!(yield*p(o,_(g,h.directoryDone||h.done),1)).length&&g.visible&&!g.disabled){b=g;break}}if(!b)return l(\"no_next_observed\",\"\\u5F53\\u524D\\u5DF2\\u8BFB\\u53D6\\u7684\\u76EE\\u5F55\\u4E2D\\u6CA1\\u6709\\u4E0B\\u4E00\\u5F85\\u5B8C\\u6210\\u7AE0\\u8282\\uFF1B\\u672A\\u628A\\u672A\\u8BFB\\u53D6\\u6761\\u76EE\\u89C6\\u4E3A\\u5B8C\\u6210\\u3002\",{complete:true});yield*v(o,b);yield*q(250);continue}let m;for(const o of s.all){const d=(yield*p(o,h.media,4)).filter(f=>f.selector);const c=d.filter(f=>f.visible);if(c.length===1){m={document:o,node:c[0]};break}}if(m){const{document:o,node:d}=m;const c={document:o,selector:d.selector};let f=yield*y(\"media.read\",c);if(!f.ended){yield*B({phase:\"media\",url:o.url,chapter:s.key});yield*y(\"media.mute\",{...c,muted:e.muted!==false});if(f.paused)f=yield*y(\"media.play\",c);for(let b=0;b<48&&!f.ended;b++){f=yield*y(\"media.wait\",{...c,until:\"ended\",timeoutMs:3e4});if([\"error\",\"emptied\",\"cancelled\"].includes(f.event))return l(\"media_interrupted\",\"\\u5A92\\u4F53\\u72B6\\u6001\\u53D8\\u5316\\uFF0C\\u8BF7\\u91CD\\u65B0\\u6838\\u5BF9\\u9875\\u9762\\u3002\",{complete:false,workflowPending:true});if(f.paused&&!f.ended){if(++i>1)return l(\"paused\",\"\\u5A92\\u4F53\\u518D\\u6B21\\u6682\\u505C\\uFF0C\\u8BF7\\u6838\\u5BF9\\u5F39\\u9898\\u3001\\u9A8C\\u8BC1\\u6216\\u7528\\u6237\\u64CD\\u4F5C\\u3002\",{complete:false,workflowPending:true});const g=(yield*p(o,h.question,1)).length;if(g)return l(\"needs_quiz\",\"\\u64AD\\u653E\\u4E2D\\u51FA\\u73B0\\u6D4B\\u9A8C\\uFF0C\\u8BF7\\u5148\\u8BFB\\u53D6\\u9898\\u76EE\\u3002\",{complete:false});f=yield*y(\"media.play\",c)}}if(!f.ended)return l(\"watching\",\"\\u5A92\\u4F53\\u4ECD\\u5728\\u64AD\\u653E\\uFF0C\\u53EF\\u4ECE\\u68C0\\u67E5\\u70B9\\u7EE7\\u7EED\\u7B49\\u5F85\\u3002\",{complete:false,workflowPending:true})}yield*q(500);s=yield*ee();if(s.complete)continue}let u=false;for(const o of s.all){if((yield*p(o,h.question,1)).length)return l(\"needs_quiz\",\"\\u5F53\\u524D\\u6709\\u7AE0\\u8282\\u6D4B\\u9A8C\\uFF0C\\u8BF7\\u8BFB\\u53D6\\u9898\\u76EE\\u5E76\\u6838\\u5BF9\\u7B54\\u6848\\u3002\",{complete:false});if(h.discussion&&(yield*p(o,h.discussion,1)).length)return l(\"needs_discussion\",\"\\u5F53\\u524D\\u6709\\u7AE0\\u8282\\u8BA8\\u8BBA\\uFF0C\\u8BF7\\u8BFB\\u53D6\\u9898\\u76EE\\u4E0E\\u533F\\u540D\\u56DE\\u590D\\u6837\\u672C\\u3002\",{complete:false});if(!e.video_only){const d=yield*te(o,{});if(d?.status===\"document_advanced\"){const c=JSON.stringify([o,(yield*p(o,M.marker,8)).map(f=>[f.text,f.attributes.src])]);n=c===t?n+1:0;t=c;if(n>=2)return l(\"reading_unconfirmed\",\"\\u8BFE\\u4EF6\\u64CD\\u4F5C\\u540E\\u672A\\u89C2\\u5BDF\\u5230\\u9605\\u8BFB\\u4F4D\\u7F6E\\u63A8\\u8FDB\\uFF0C\\u8BF7\\u6838\\u5BF9\\u9605\\u8BFB\\u5668\\u3002\",{complete:false});u=true;yield*B({phase:\"reading\",url:o.url,chapter:s.key});break}}}if(u)continue;let a=false;for(const o of s.all){const d=(yield*p(o,h.tabs,40)).filter(b=>b.visible);const c=d.findIndex(b=>b.attributes[\"aria-selected\"]===\"true\"||new RegExp(h.selectedTab).test(b.attributes.class));const f=d[c+1];if(c>=0&&f&&!f.disabled&&!new RegExp(h.disabledTab).test(f.attributes.class)&&f.attributes[\"aria-disabled\"]!==\"true\"){yield*v(o,f);yield*q(250);a=true;break}}if(!a)return l(\"awaiting_credit\",\"\\u6CA1\\u6709\\u89C2\\u5BDF\\u5230\\u7AE0\\u8282\\u5B8C\\u6210\\u6807\\u8BB0\\u6216\\u53EF\\u5B89\\u5168\\u63A8\\u8FDB\\u7684\\u9875\\u7B7E\\u3002\",{complete:false})}return l(\"pending\",\"\\u5DF2\\u8FBE\\u5230\\u5355\\u6B21\\u63A8\\u8FDB\\u4E0A\\u9650\\uFF0C\\u8BF7\\u91CD\\u65B0\\u6838\\u5BF9\\u5F53\\u524D\\u7AE0\\u8282\\u540E\\u7EE7\\u7EED\\u3002\",{complete:false})}function*oe(e,t){if(!P)return l(\"unsupported\",\"\\u8BE5\\u7AD9\\u70B9\\u5C1A\\u65E0\\u5DF2\\u6838\\u5B9E\\u7684\\u8BA8\\u8BBA\\u89C4\\u5219\\u3002\");const n=yield*j();for(const i of n){const r=yield*p(i,P.topic,4);if(!r.length)continue;const s=r.map(c=>c.text.trim()).filter(Boolean).join(\"\\n\").slice(0,2600);const m=D([i,s]);const u=(yield*p(i,P.replies,6)).map(c=>c.text.trim().slice(0,500));const a={discussion_id:m,topic:s,replies:u};if(!e.reply)return l(\"discussion\",\"\\u4EC5\\u53D6\\u8BA8\\u8BBA\\u9898\\u76EE\\u548C\\u5C11\\u91CF\\u533F\\u540D\\u56DE\\u590D\\uFF1B\\u7531\\u6A21\\u578B\\u72EC\\u7ACB\\u7EC4\\u7EC7\\u56DE\\u590D\\u3002\",a);if(e.discussion_id!==m||e.reply.length>4e3||!e.reply.trim())return l(\"stale\",\"\\u8BA8\\u8BBA\\u76EE\\u6807\\u5DF2\\u53D8\\u5316\\u6216\\u56DE\\u590D\\u683C\\u5F0F\\u65E0\\u6548\\u3002\",a);if(u.includes(e.reply.trim()))return l(\"reply_observed\",\"\\u5DF2\\u89C2\\u5BDF\\u5230\\u76F8\\u540C\\u6B63\\u6587\\uFF0C\\u4E0D\\u91CD\\u590D\\u53D1\\u5E03\\u3002\",a);if(t?.state?.phase===\"posting\")return l(\"reply_unconfirmed\",\"\\u4E0A\\u6B21\\u53D1\\u5E03\\u7ED3\\u679C\\u4E0D\\u660E\\u786E\\uFF0C\\u5DF2\\u505C\\u6B62\\u81EA\\u52A8\\u91CD\\u53D1\\uFF0C\\u8BF7\\u6838\\u5BF9\\u7F51\\u9875\\u3002\",{...a,workflowPending:true});const o=yield*k(i,P.input,true),d=yield*k(i,P.submit,true);if(!o||!d||o.disabled||d.disabled)return l(\"unavailable\",\"\\u672A\\u786E\\u8BA4\\u552F\\u4E00\\u7684\\u8BA8\\u8BBA\\u8F93\\u5165\\u6846\\u548C\\u53D1\\u9001\\u6309\\u94AE\\u3002\",a);if(o.hasValue&&!(yield*y(\"document.compare\",{document:i,selector:o.selector,text:e.reply})).matches)return l(\"draft_conflict\",\"\\u4FDD\\u7559\\u7F51\\u9875\\u4E2D\\u5DF2\\u6709\\u7684\\u4E0D\\u540C\\u8349\\u7A3F\\u3002\",a);yield*y(\"document.fill\",{document:i,selector:o.selector,text:e.reply});if(!(yield*y(\"document.compare\",{document:i,selector:o.selector,text:e.reply})).matches)return l(\"draft_unconfirmed\",\"\\u56DE\\u590D\\u6B63\\u6587\\u672A\\u56DE\\u8BFB\\u4E00\\u81F4\\u3002\",a);yield*B({phase:\"posting\",url:i.url,discussion:m});yield*v(i,d);for(let c=0;c<4;c++){yield*q(250);const f=(yield*p(i,P.replies,40)).map(b=>b.text.trim());if(f.includes(e.reply.trim()))return l(\"reply_observed\",\"\\u5DF2\\u5728\\u7F51\\u9875\\u56DE\\u8BFB\\u5230\\u56DE\\u590D\\uFF0C\\u7AE0\\u8282\\u5B66\\u5206\\u4ECD\\u4EE5\\u5E73\\u53F0\\u6807\\u8BB0\\u4E3A\\u51C6\\u3002\",{...a,replies:f.slice(0,6).map(b=>b.slice(0,500))})}return l(\"reply_unconfirmed\",\"\\u5DF2\\u70B9\\u51FB\\u53D1\\u5E03\\uFF0C\\u5C1A\\u672A\\u56DE\\u8BFB\\u5230\\u6B63\\u6587\\uFF0C\\u8BF7\\u6838\\u5BF9\\u7F51\\u9875\\uFF0C\\u4E0D\\u81EA\\u52A8\\u91CD\\u590D\\u53D1\\u9001\\u3002\",{...a,workflowPending:true})}return l(\"not_found\",\"\\u5F53\\u524D\\u9875\\u9762\\u6CA1\\u6709\\u8BC6\\u522B\\u5230\\u652F\\u6301\\u7684\\u7AE0\\u8282\\u8BA8\\u8BBA\\u3002\")}function*fe({tool:e,args:t,resume:n}){const i={login:W,catalog:K,read_questions:X,answer_questions:Y,study:ne,read_document:ie,discussion:oe};if(!i[e])throw new Error(\"\\u672A\\u77E5\\u7AD9\\u70B9\\u5DE5\\u5177\");return yield*i[e](t,n)}return de(pe);})();\n",
+    "sha256": "70cbfdf172b383e4016ca6864821f917925da72a0473a063dacbad6cd2d054ca"
+  },
+  "tools": [
+    {
+      "name": "login",
+      "description": "登录当前站点。凭据由宿主在聊天表单中收集并安全填写，模型不可读取。返回 captcha 时识别附图，以相同 captcha_id 和 captcha_code 再调用；验证码或密码错误按实际网页分别处理。只有 loggedIn=true 表示已确认登录。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "captcha_id": {
+            "type": "string"
+          },
+          "captcha_code": {
+            "type": "string"
+          },
+          "replace_credentials": {
+            "type": "boolean"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "loggedIn": {
+            "type": "boolean"
+          },
+          "captchaImage": {
+            "type": "string"
+          },
+          "captcha_id": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "kind",
+                "status",
+                "url"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 40
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "number": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
+                "stem": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "supported": {
+                  "type": "boolean"
+                },
+                "visual": {
+                  "type": "boolean"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "text": {
+                        "type": "string"
+                      },
+                      "selected": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "key",
+                      "text",
+                      "selected"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16
+                },
+                "blanks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 16
+                      },
+                      "filled": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "filled"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16
+                },
+                "reviewAnswer": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "number",
+                "stem",
+                "type",
+                "supported",
+                "visual",
+                "options",
+                "blanks",
+                "reviewAnswer"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 8
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "next_offset": {
+            "type": "integer",
+            "minimum": -1,
+            "maximum": 10000
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "workflowPending": {
+            "type": "boolean"
+          },
+          "topic": {
+            "type": "string"
+          },
+          "discussion_id": {
+            "type": "string"
+          },
+          "replies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6
+          }
+        },
+        "required": [
+          "status",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "commands": [
+        "document.list",
+        "document.query",
+        "browser.wait",
+        "document.click",
+        "document.navigate",
+        "document.image",
+        "document.fill",
+        "credentials.request",
+        "credentials.fill"
+      ]
+    },
+    {
+      "name": "catalog",
+      "description": "读取当前学生页面的课程、作业或章节列表。按 title 唯一匹配或 open_id 打开刚读取的条目；重复名称返回候选。offset 分批读取，next_page 只点击已确认的网页下一页。打开后用对应工具核对落地页。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "courses",
+              "homework",
+              "chapters"
+            ]
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "title": {
+            "type": "string"
+          },
+          "teacher": {
+            "type": "string"
+          },
+          "open_id": {
+            "type": "string"
+          },
+          "next_page": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "loggedIn": {
+            "type": "boolean"
+          },
+          "captchaImage": {
+            "type": "string"
+          },
+          "captcha_id": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "kind",
+                "status",
+                "url"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 40
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "number": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
+                "stem": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "supported": {
+                  "type": "boolean"
+                },
+                "visual": {
+                  "type": "boolean"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "text": {
+                        "type": "string"
+                      },
+                      "selected": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "key",
+                      "text",
+                      "selected"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16
+                },
+                "blanks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 16
+                      },
+                      "filled": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "filled"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16
+                },
+                "reviewAnswer": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "number",
+                "stem",
+                "type",
+                "supported",
+                "visual",
+                "options",
+                "blanks",
+                "reviewAnswer"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 8
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "next_offset": {
+            "type": "integer",
+            "minimum": -1,
+            "maximum": 10000
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "workflowPending": {
+            "type": "boolean"
+          },
+          "topic": {
+            "type": "string"
+          },
+          "discussion_id": {
+            "type": "string"
+          },
+          "replies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6
+          }
+        },
+        "required": [
+          "status",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "commands": [
+        "document.list",
+        "document.query",
+        "document.click",
+        "browser.wait"
+      ]
+    },
+    {
+      "name": "read_questions",
+      "description": "只读当前作业或章节测验的题干、选项、已有作答标记与页面公布的解析，每次最多八题。保留 question id 用于填写；含图、混淆字体、未知或复杂题型不自动填写。没有题库答案时由 Agent 使用通用题库检索或模型推理，不能声称已查询服务器。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "loggedIn": {
+            "type": "boolean"
+          },
+          "captchaImage": {
+            "type": "string"
+          },
+          "captcha_id": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "kind",
+                "status",
+                "url"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 40
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "number": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
+                "stem": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "supported": {
+                  "type": "boolean"
+                },
+                "visual": {
+                  "type": "boolean"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "text": {
+                        "type": "string"
+                      },
+                      "selected": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "key",
+                      "text",
+                      "selected"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16
+                },
+                "blanks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 16
+                      },
+                      "filled": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "filled"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16
+                },
+                "reviewAnswer": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "number",
+                "stem",
+                "type",
+                "supported",
+                "visual",
+                "options",
+                "blanks",
+                "reviewAnswer"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 8
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "next_offset": {
+            "type": "integer",
+            "minimum": -1,
+            "maximum": 10000
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "workflowPending": {
+            "type": "boolean"
+          },
+          "topic": {
+            "type": "string"
+          },
+          "discussion_id": {
+            "type": "string"
+          },
+          "replies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6
+          }
+        },
+        "required": [
+          "status",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "commands": [
+        "document.list",
+        "document.query",
+        "document.compare"
+      ]
+    },
+    {
+      "name": "answer_questions",
+      "description": "填写 Agent 已核实的答案并逐题回读。使用 read_questions 刚返回的 question_id 和当前选项字母或 blanks；保留冲突的已有作答，拒绝变化的题目和不支持题型。不会保存或交卷。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "question_id": {
+                  "type": "string"
+                },
+                "choices": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 16
+                },
+                "blanks": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 16
+                }
+              },
+              "required": [
+                "question_id"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 8,
+            "minItems": 1
+          }
+        },
+        "required": [
+          "answers"
+        ],
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "loggedIn": {
+            "type": "boolean"
+          },
+          "captchaImage": {
+            "type": "string"
+          },
+          "captcha_id": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "kind",
+                "status",
+                "url"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 40
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "number": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
+                "stem": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "supported": {
+                  "type": "boolean"
+                },
+                "visual": {
+                  "type": "boolean"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "text": {
+                        "type": "string"
+                      },
+                      "selected": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "key",
+                      "text",
+                      "selected"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16
+                },
+                "blanks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 16
+                      },
+                      "filled": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "filled"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16
+                },
+                "reviewAnswer": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "number",
+                "stem",
+                "type",
+                "supported",
+                "visual",
+                "options",
+                "blanks",
+                "reviewAnswer"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 8
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "next_offset": {
+            "type": "integer",
+            "minimum": -1,
+            "maximum": 10000
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "workflowPending": {
+            "type": "boolean"
+          },
+          "topic": {
+            "type": "string"
+          },
+          "discussion_id": {
+            "type": "string"
+          },
+          "replies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6
+          }
+        },
+        "required": [
+          "status",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "commands": [
+        "document.list",
+        "document.query",
+        "document.click",
+        "document.fill",
+        "document.compare"
+      ]
+    },
+    {
+      "name": "study",
+      "description": "当前章节工作流：按真实目录标记核对完成，按页签推进，处理视频和课件阅读。视频通过媒体事件等待，结束后重新检查平台标记；测验和讨论返回 needs_quiz/needs_discussion 给 Agent 处理后继续。中断后从检查点重新观察，不重放旧控件。不会仅因视频结束就宣称章节完成。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "read_only": {
+            "type": "boolean"
+          },
+          "current_only": {
+            "type": "boolean"
+          },
+          "video_only": {
+            "type": "boolean"
+          },
+          "muted": {
+            "type": "boolean"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "loggedIn": {
+            "type": "boolean"
+          },
+          "captchaImage": {
+            "type": "string"
+          },
+          "captcha_id": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "kind",
+                "status",
+                "url"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 40
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "number": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
+                "stem": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "supported": {
+                  "type": "boolean"
+                },
+                "visual": {
+                  "type": "boolean"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "text": {
+                        "type": "string"
+                      },
+                      "selected": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "key",
+                      "text",
+                      "selected"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16
+                },
+                "blanks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 16
+                      },
+                      "filled": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "filled"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16
+                },
+                "reviewAnswer": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "number",
+                "stem",
+                "type",
+                "supported",
+                "visual",
+                "options",
+                "blanks",
+                "reviewAnswer"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 8
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "next_offset": {
+            "type": "integer",
+            "minimum": -1,
+            "maximum": 10000
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "workflowPending": {
+            "type": "boolean"
+          },
+          "topic": {
+            "type": "string"
+          },
+          "discussion_id": {
+            "type": "string"
+          },
+          "replies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6
+          }
+        },
+        "required": [
+          "status",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "commands": [
+        "document.list",
+        "document.query",
+        "browser.wait",
+        "document.click",
+        "document.scroll",
+        "document.select",
+        "media.read",
+        "media.play",
+        "media.mute",
+        "media.wait",
+        "workflow.checkpoint"
+      ]
+    },
+    {
+      "name": "read_document",
+      "description": "读取或推进当前 PDF、PPT、图书阅读器的真实下一页、页面选择或滚动控件。read_only=true 仅观察。停留要求和任务完成以平台为准，不伪造阅读统计。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "read_only": {
+            "type": "boolean"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "loggedIn": {
+            "type": "boolean"
+          },
+          "captchaImage": {
+            "type": "string"
+          },
+          "captcha_id": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "kind",
+                "status",
+                "url"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 40
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "number": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
+                "stem": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "supported": {
+                  "type": "boolean"
+                },
+                "visual": {
+                  "type": "boolean"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "text": {
+                        "type": "string"
+                      },
+                      "selected": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "key",
+                      "text",
+                      "selected"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16
+                },
+                "blanks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 16
+                      },
+                      "filled": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "filled"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16
+                },
+                "reviewAnswer": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "number",
+                "stem",
+                "type",
+                "supported",
+                "visual",
+                "options",
+                "blanks",
+                "reviewAnswer"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 8
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "next_offset": {
+            "type": "integer",
+            "minimum": -1,
+            "maximum": 10000
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "workflowPending": {
+            "type": "boolean"
+          },
+          "topic": {
+            "type": "string"
+          },
+          "discussion_id": {
+            "type": "string"
+          },
+          "replies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6
+          }
+        },
+        "required": [
+          "status",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "commands": [
+        "document.list",
+        "document.query",
+        "browser.wait",
+        "document.click",
+        "document.scroll",
+        "document.select"
+      ]
+    },
+    {
+      "name": "discussion",
+      "description": "读取当前章节讨论题目和最多六条匿名回复。用户已要求回复时，由 Agent 独立组织正文，再携带当前 discussion_id 和 reply 调用；发布后回读，结果不明时不自动重发。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "discussion_id": {
+            "type": "string"
+          },
+          "reply": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "result": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "loggedIn": {
+            "type": "boolean"
+          },
+          "captchaImage": {
+            "type": "string"
+          },
+          "captcha_id": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "kind",
+                "status",
+                "url"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 40
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "number": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
+                "stem": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "supported": {
+                  "type": "boolean"
+                },
+                "visual": {
+                  "type": "boolean"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "text": {
+                        "type": "string"
+                      },
+                      "selected": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "key",
+                      "text",
+                      "selected"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16
+                },
+                "blanks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 16
+                      },
+                      "filled": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "filled"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16
+                },
+                "reviewAnswer": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "number",
+                "stem",
+                "type",
+                "supported",
+                "visual",
+                "options",
+                "blanks",
+                "reviewAnswer"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 8
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "next_offset": {
+            "type": "integer",
+            "minimum": -1,
+            "maximum": 10000
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "workflowPending": {
+            "type": "boolean"
+          },
+          "topic": {
+            "type": "string"
+          },
+          "discussion_id": {
+            "type": "string"
+          },
+          "replies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6
+          }
+        },
+        "required": [
+          "status",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "commands": [
+        "document.list",
+        "document.query",
+        "browser.wait",
+        "document.click",
+        "document.fill",
+        "document.compare",
+        "workflow.checkpoint"
+      ]
+    }
+  ]
+}

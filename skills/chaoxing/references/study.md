@@ -1,49 +1,11 @@
-# 学习通章节与视频
+# 章节工作流
 
-指定小节可先按 [本地快捷入口](../SKILL.md#本地快捷入口) 匹配课程和小节，使用 `browser_navigate` 打开，再用 `browser_review_chapter` 核对。需要推进任务时，调用 `browser_start_chapter_tasks(current_only=true)`。没有可用链接时走下方的目录流程。
+使用 `browser_site_chaoxing__study` 读取当前目录和页签后推进。`read_only=true` 不操作页面，`current_only=true` 不跨小节。每次只启动唯一可见的播放器，先应用静音再播放，使用媒体事件等待。再次自动暂停时停止争抢播放器，核对弹题、验证或用户暂停。
 
-用户要求完成学习通章节任务时，启动一次 `browser_start_chapter_tasks`。整课传 `course_name`，只处理当前小节时传 `current_only=true`。宿主会按顺序处理视频、支持的 PDF/PPT/图书，以及已授权的测验填写和复核。平台确认任务点完成后自动继续。
+视频结束后重新检查平台完成图标，不能将 `ended` 当成章节完成。目录中下一节必须来自新读取的可见叶子条目；未知状态、未读取的目录分页不能报告完成。
 
-学生端进入目标小节后，先用 `browser_review_chapter` 核对章节、待完成数和当前任务点。完成本小节用 `browser_complete_chapter(chapter_key)`，每次推进一个任务点或切换本节的页签。用户只要求处理视频时传 `video_only=true`。
+`needs_quiz` 时读取本章测验，生成答案后逐题填答复核；需交卷时遵守用户授权。`needs_discussion` 时读取讨论题目和少量匿名样本，由模型独立写回复；学习通使用 `browser_site_chaoxing__discussion` 的 `discussion_id` 和 `reply` 发布并回读，不复制他人的答案。当前在浙学没有已核实的讨论页面规则，返回 unsupported。
 
-视频结束后，宿主会先核对原任务点的完成标记，再自动推进。本节完成返回 `complete`；整门课经学生目录核对全部完成时返回 `course_complete`。测验返回 `needs_quiz` 时先查看 `quiz` 汇总，再处理需要补题、保存或提交的部分。课件返回 `needs_document` 时核对当前阅读器或平台回执。处理完成后继续同一工作流，保留整课或本节范围。
+PDF/PPT/图书阅读在工作流中识别可见阅读器，按实际下一页、页码选择或滚动控件推进，尊重页面停留要求。也可用 `browser_site_chaoxing__read_document` 检查当前阅读器。阅读位置不推进时停止。翻页和滚动不代表平台学分登记，不直接调用伪造完成接口。
 
-专用脚本不可用或页面结构需要额外核对时，按最新快照点击指定任务点，确认视频实际播放后用 `browser_watch`。
-
-完成章节或课程时，默认检查并完成范围内的视频和章节测验等任务点；用户明确限定只看视频或不答题时遵守其范围。提交后核对结果和任务点状态。
-题目文字出现字体混淆时先调用 `browser_decode_chaoxing_font`，按返回的框和顺序结合快照核对题干、选项及控件；解码失败时看截图，不清楚就滚动后再截图，不能根据乱码猜测。
-
-## 顺序
-
-1. 导航页先开 https://i.chaoxing.com。登录页只在被踢到 passport2 时再填。
-   已登录也先确认课表选中「我学的课」，切换后重新读取快照核对当前页签，再在该列表打开目标课程。不要从空间首页或「我教的课」打开同名课。进课后先核对学生视角；`/mycourse/tch`、章节编辑或发布控件表示进错教师入口，应返回学生课表查找，不继续点章节，不改 URL 猜入口。学生课表没有目标课时报告实际情况。
-2. 课程壳停在「任务」时，点侧栏「章节」。这仍是课程节点，重新 `browser_get_page` 检查目录。
-3. 目录里点带橙色数字的节名（如 `1.1`），不要点「第N章」标题。
-4. 进入节后先检查当前选中的任务页签。若页面有「学习目标」「视频」「章节测验」等页签且尚未选中「视频」，先点击可见的「视频」，再重新读取快照；不要把学习目标页没有播放器误判为视频加载失败。并非所有课程都有这些页签，以当前页面为准。
-   播放页可能是多层 iframe：`studentstudy` → `knowledge/cards` → 视频框（按 mid 区分）→ 测验还可能再套一层。快照按框分段。
-5. 用最新 ref 点击指定视频框里的播放，确认时间正常推进后再 `browser_watch`。定位带回的 frameId/loaderId 优先于框名；框已换文档时重新读取，不复用旧 ref。
-6. `browser_wait`。面板出现测验、本节做完、卡住或验证码会结束等待。
-   章节测验和复核的流程见 `references/homework.md`。
-
-## 坑
-
-- 框地址（`knowledge/cards` / `ananas`）留在课程框内操作，不要用 `browser_navigate` 当顶层网页打开。
-- 两个视频框内部结构一样，按快照里的框路径和 mid 区分，不要点回第一条。
-- 隐藏的 0 尺寸框不要点。
-- 本节测验做完后点下一节，不必回作业列表。
-- 看 iframe 用快照里的精确 frameId/loaderId；`browser_eval` 只读，不写 `iframe.contentDocument` 跨框遍历，也不调用隐藏接口。
-- 正常播放期间不反复点击或刷新。明确媒体加载失败且已停止加载时，可刷新当前页一次；刷新后重新定位原任务点。再次失败则说明具体阻塞。
-- 结束事件唤醒后重新读当前页，核对原任务点完成标记，再处理本节测验与下一节。若等待未建立成功，不能仅输出“已挂监控”就结束。
-- 用户只指定部分章节时，完成与汇报均限定该范围，不要求整门课完成；用户明确要求只读核对时，不作答或推进课程。
-
-## 页面切换后的定位恢复
-
-- 切换章节、任务页签或刷新后，先重新获取快照，再用目标所在框的最新 ref、frameId 和 loaderId 操作。顶层 URL 未变化也可能已经替换了 iframe 文档。
-- 点击出现“目标 frame 不存在或不唯一”或“Node with given id does not belong to the document”时，重新读取快照并定位原目标；不要重复提交旧 ref 或照抄报错中的示例选择器。
-- 新快照中找不到目标时，核对当前章节、选中页签和可见框路径。只有页面确实提供该目标才继续点击；无法确认时报告当前页面与目标的差异。
-
-## 测验与讨论回执
-
-- 收到 `needs_quiz` 时先看 `quiz` 汇总。需要复核或补填时，传回 `chapterKey` 和 `quiz_job_id`，保持同一 `assignment_id` 和用户指定题号范围。保存或提交后核对平台回执，再继续原章节工作流。
-- 收到 `needs_discussion` 时，以 `discussion` 中的题目和少量回复作为参考，独立组织正文。只查看时用 `browser_review_chapter_discussion`。用户授权回复且 `canReply=true` 时，调用一次 `browser_reply_chapter_discussion`，传 `chapter_key`、`tab`、`discussion_id` 和 `reply`。
-- `discussion_completed` 表示平台已确认任务点完成。收到 `awaiting_discussion_credit` 或发送结果不明时，复核同一讨论。可见回复与平台登记分别核对。
+中断时保存语义检查点，不保存密码或过期选择器。`workflowPending=true` 可恢复等待；恢复先重新观察页面，遇到讨论发布不确定时禁止自动重发。

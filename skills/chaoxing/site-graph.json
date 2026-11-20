@@ -17,11 +17,16 @@
       "path": "passport2.chaoxing.com/login?newversion=true",
       "summary": "账号密码登录。",
       "structure": "常见表单控件为 #phone / #pwd / #loginBtn；使用前核对当前快照，若表单位于框内则采用实际 frameId。",
-      "sketch": { "kind": "full", "shell": "passport2 登录页", "caption": "整页表单 · 无 iframe" },
+      "sketch": {
+        "kind": "full",
+        "shell": "passport2 登录页",
+        "caption": "整页表单 · 无 iframe"
+      },
       "row": 0,
       "col": 0,
-      "patterns": ["passport2\\.chaoxing\\.com"],
-      "parserIds": ["login"]
+      "patterns": [
+        "passport2\\.chaoxing\\.com"
+      ]
     },
     {
       "id": "space",
@@ -32,11 +37,19 @@
       "sketch": {
         "kind": "host-tabs",
         "shell": "i.chaoxing.com",
-        "tabs": ["我教的课", "我学的课"],
+        "tabs": [
+          "我教的课",
+          "我学的课"
+        ],
         "pane": "/visit/interaction",
         "caption": "页签在 #frame_content 里 · 外壳地址常不变"
       },
-      "frame": { "name": "#frame_content", "title": "课表", "open": "top", "kind": "host" },
+      "frame": {
+        "name": "#frame_content",
+        "title": "课表",
+        "open": "top",
+        "kind": "host"
+      },
       "frames": [
         {
           "id": "taught",
@@ -44,7 +57,9 @@
           "name": "/visit/interaction",
           "title": "我教的课",
           "open": "stay",
-          "patterns": ["visit/interaction"]
+          "patterns": [
+            "visit/interaction"
+          ]
         },
         {
           "id": "learned",
@@ -52,7 +67,10 @@
           "name": "/visit/courses",
           "title": "我学的课",
           "open": "stay",
-          "patterns": ["visit/courses", "courselist"]
+          "patterns": [
+            "visit/courses",
+            "courselist"
+          ]
         }
       ],
       "row": 1,
@@ -63,8 +81,7 @@
         "visit/interaction",
         "visit/courses",
         "courselist"
-      ],
-      "parserIds": []
+      ]
     },
     {
       "id": "course",
@@ -75,11 +92,20 @@
       "sketch": {
         "kind": "host-side",
         "shell": "mycourse/stu 外壳",
-        "side": ["任务", "章节", "作业"],
+        "side": [
+          "任务",
+          "章节",
+          "作业"
+        ],
         "pane": "stuActiveList",
         "caption": "点章节=目录，点节名才播放"
       },
-      "frame": { "name": "中间框", "title": "侧栏内容", "open": "stay", "kind": "host" },
+      "frame": {
+        "name": "中间框",
+        "title": "侧栏内容",
+        "open": "stay",
+        "kind": "host"
+      },
       "frames": [
         {
           "id": "tasks",
@@ -87,7 +113,11 @@
           "name": "stuActiveList",
           "title": "任务列表",
           "open": "stay",
-          "patterns": ["[?&]pageHeader=0(?:&|$)", "stuActiveList", "\\/active\\/stu"]
+          "patterns": [
+            "[?&]pageHeader=0(?:&|$)",
+            "stuActiveList",
+            "\\/active\\/stu"
+          ]
         },
         {
           "id": "chapters",
@@ -95,7 +125,10 @@
           "name": "studentcourse",
           "title": "章节目录",
           "open": "stay",
-          "patterns": ["[?&]pageHeader=1(?:&|$)", "studentcourse"]
+          "patterns": [
+            "[?&]pageHeader=1(?:&|$)",
+            "studentcourse"
+          ]
         },
         {
           "id": "homework",
@@ -120,8 +153,7 @@
         "stuActiveList",
         "\\/active\\/stu",
         "\\/work\\/(?:list|index|view)(?:[/?#]|$)"
-      ],
-      "parserIds": ["course"]
+      ]
     },
     {
       "id": "study",
@@ -132,15 +164,28 @@
       "sketch": {
         "kind": "nested",
         "shell": "studentstudy 播放页",
-        "side": ["节目录"],
-        "stack": ["knowledge/cards", "视频 / 本节测验"],
+        "side": [
+          "节目录"
+        ],
+        "stack": [
+          "knowledge/cards",
+          "视频 / 本节测验"
+        ],
         "caption": "进入具体小节后定位视频或测验"
       },
-      "frame": { "name": "cards → ananas/video|work", "title": "播放器/本节测验", "open": "stay", "kind": "host" },
+      "frame": {
+        "name": "cards → ananas/video|work",
+        "title": "播放器/本节测验",
+        "open": "stay",
+        "kind": "host"
+      },
       "row": 3,
       "col": 0,
-      "patterns": ["studentstudy", "\\/knowledge\\/cards", "ananas\\/modules"],
-      "parserIds": ["study", "captcha", "homework"]
+      "patterns": [
+        "studentstudy",
+        "\\/knowledge\\/cards",
+        "ananas\\/modules"
+      ]
     },
     {
       "id": "homework-do",
@@ -148,7 +193,11 @@
       "path": "/work/dowork",
       "summary": "课程作业的独立作答页（从课程壳「作业」名单打开）。",
       "structure": "从课程作业名单打开后，按当前页面读取题干与选项；内容也可能位于嵌套框内。章节播放里夹带的测验不要认成本节点。",
-      "sketch": { "kind": "full", "shell": "作业作答页", "caption": "作业内容 · 以实际框结构为准" },
+      "sketch": {
+        "kind": "full",
+        "shell": "作业作答页",
+        "caption": "作业内容 · 以实际框结构为准"
+      },
       "row": 3,
       "col": 1,
       "patterns": [
@@ -157,22 +206,77 @@
         "\\/work\\/phone\\/do",
         "dowork",
         "do-work"
-      ],
-      "parserIds": ["homework"]
+      ]
     }
   ],
   "edges": [
-    { "from": "login", "to": "space", "label": "登录成功" },
-    { "from": "space", "to": "course", "label": "点课名" },
-    { "from": "course", "to": "space", "label": "回空间", "kind": "back" },
-    { "from": "course", "to": "course", "label": "侧栏切页签", "kind": "loop" },
-    { "from": "course", "to": "study", "label": "目录里点节名" },
-    { "from": "course", "to": "homework-do", "label": "打开一份作业" },
-    { "from": "study", "to": "course", "label": "回课程", "kind": "back" },
-    { "from": "study", "to": "study", "label": "切节", "kind": "loop" },
-    { "from": "study", "to": "study", "label": "切任务点", "kind": "loop" },
-    { "from": "study", "to": "study", "label": "验证码", "kind": "loop" },
-    { "from": "study", "to": "study", "label": "本节测验", "kind": "loop" },
-    { "from": "homework-do", "to": "course", "label": "返回作业名单", "kind": "back" }
+    {
+      "from": "login",
+      "to": "space",
+      "label": "登录成功"
+    },
+    {
+      "from": "space",
+      "to": "course",
+      "label": "点课名"
+    },
+    {
+      "from": "course",
+      "to": "space",
+      "label": "回空间",
+      "kind": "back"
+    },
+    {
+      "from": "course",
+      "to": "course",
+      "label": "侧栏切页签",
+      "kind": "loop"
+    },
+    {
+      "from": "course",
+      "to": "study",
+      "label": "目录里点节名"
+    },
+    {
+      "from": "course",
+      "to": "homework-do",
+      "label": "打开一份作业"
+    },
+    {
+      "from": "study",
+      "to": "course",
+      "label": "回课程",
+      "kind": "back"
+    },
+    {
+      "from": "study",
+      "to": "study",
+      "label": "切节",
+      "kind": "loop"
+    },
+    {
+      "from": "study",
+      "to": "study",
+      "label": "切任务点",
+      "kind": "loop"
+    },
+    {
+      "from": "study",
+      "to": "study",
+      "label": "验证码",
+      "kind": "loop"
+    },
+    {
+      "from": "study",
+      "to": "study",
+      "label": "本节测验",
+      "kind": "loop"
+    },
+    {
+      "from": "homework-do",
+      "to": "course",
+      "label": "返回作业名单",
+      "kind": "back"
+    }
   ]
 }

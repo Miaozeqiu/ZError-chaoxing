@@ -15,7 +15,11 @@
     "test": "node scripts/validate.mjs && npm run build && node --test scripts/*.test.mjs"
   },
   "devDependencies": {
+    "@jitl/quickjs-wasmfile-release-sync": "0.32.0",
+    "ajv": "8.18.0",
     "esbuild": "0.25.5",
+    "jsdom": "30.0.1",
+    "quickjs-emscripten-core": "0.32.0",
     "typescript": "5.8.3"
   }
 }
