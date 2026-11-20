@@ -40,10 +40,10 @@ export function* readQuestions(args) {
   const documentsNow = yield* documents()
   for (const document of documentsNow) {
     const found = yield* query(document, rules.rows, args.limit || 4, args.offset || 0)
-    if (!found.nodes.length) continue
+    if (!found.nodes.some(row => row.visible)) continue
     const questions = []
     for (const row of found.nodes) {
-      if (row.selector) questions.push(publicQuestion(yield* readQuestion(document, row)))
+      if (row.selector && row.visible) questions.push(publicQuestion(yield* readQuestion(document, row)))
     }
     return result('questions', '仅返回本批题目。含图片、混淆字体或不支持题型时不自动填写；空格仅返回是否有作答。', {
       questions, total: found.total, next_offset: found.truncated ? (args.offset || 0) + found.nodes.length : -1,

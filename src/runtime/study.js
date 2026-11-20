@@ -1,4 +1,4 @@
-import { call, documents, nodes, one, click, pause, checkpoint, child, stableId, result, urlParts } from './host.js'
+import { call, documents, nodes, query, one, click, pause, checkpoint, child, stableId, result, urlParts } from './host.js'
 import { chapter, viewer, discussion } from './rules.js'
 
 function* chapterState() {
@@ -9,8 +9,9 @@ function* chapterState() {
     const row = active[0]
     let done = (yield* nodes(document, child(row, chapter.done), 1)).length > 0
     if (done && chapter.completionScope === 'tabs') {
-      const observedTabs = yield* nodes(document, chapter.tabs, 40)
-      for (const tab of observedTabs) {
+      const tabPage = yield* query(document, chapter.tabs, 40)
+      if (tabPage.truncated) done = false
+      for (const tab of tabPage.nodes) {
         if (!tab.disabled && !(yield* nodes(document, child(tab, chapter.done), 1)).length) { done = false; break }
       }
     }
@@ -71,13 +72,15 @@ export function* studyFlow(args) {
         }
       }
       if (!directoryRow) return result('directory_unavailable', '当前节已完成，但尚未确认其在课程目录中的位置。', { complete: true })
-      const rows = yield* nodes(directoryDocument, chapter.directoryRows || chapter.rows, 40)
+      const directoryPage = yield* query(directoryDocument, chapter.directoryRows || chapter.rows, 40)
+      const rows = directoryPage.nodes
       const current = rows.findIndex(node => node.selector === directoryRow.selector)
       if (current < 0) return result('directory_unavailable', '当前小节不在已读取的目录范围中，请重新读取目录。', { complete: true })
       let next
       for (const row of rows.slice(Math.max(0, current + 1))) {
         if (!(yield* nodes(directoryDocument, child(row, chapter.directoryDone || chapter.done), 1)).length && row.visible && !row.disabled) { next = row; break }
       }
+      if (!next && directoryPage.truncated) return result('directory_more', '目录仍有未读取条目，请继续读取目录后核对用户范围。', { complete: false })
       if (!next) return result('no_next_observed', '当前已读取的目录中没有下一待完成章节；未把未读取条目视为完成。', { complete: true })
       yield* click(directoryDocument, next); yield* pause(250); continue
     }

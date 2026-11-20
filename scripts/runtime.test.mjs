@@ -199,3 +199,20 @@ test('continues from a completed section to the next freshly observed leaf', asy
     assert.equal(io.events.filter(event => event.op === 'document.click').length, 1)
   } finally { io.close() }
 })
+
+test('hidden question rows are not read into the model batch', async () => {
+  const io = paper(2)
+  io.window.document.querySelector(cx ? '.questionLi' : '.questiono-item').hidden = true
+  try {
+    const result = await execute('read_questions', {}, io)
+    assert.equal(result.questions.length, 1)
+    assert.equal(result.questions[0].number, 2)
+  } finally { io.close() }
+})
+test('a truncated tab list cannot prove the whole section complete', { skip: cx }, async () => {
+  const io = videoHost(), doc = io.window.document
+  doc.querySelector('.icon-shipin').classList.add('complete')
+  doc.querySelector('.el-tabs__header').insertAdjacentHTML('beforeend', '<button role="tab"><span class="complete"></span></button>'.repeat(40))
+  try { assert.equal((await execute('study', { read_only: true }, io)).complete, false) }
+  finally { io.close() }
+})
