@@ -102,17 +102,18 @@ export async function execute(tool, args, io, resume) {
   assert(validate.validate(spec.parameters, args), JSON.stringify(validate.errors))
   const runtime = quickjs.newRuntime()
   runtime.setMemoryLimit(8 * 1024 * 1024); runtime.setMaxStackSize(256 * 1024)
-  let deadline = 0
+  let deadline = 0, initialized = false
   runtime.setInterruptHandler(() => performance.now() > deadline)
   const context = runtime.newContext()
-  const evaluate = source => {
-    deadline = performance.now() + 100
+  const evaluate = (source, initialize = false) => {
+    deadline = performance.now() + (initialize && !initialized ? 500 : 100)
+    initialized = true
     const result = context.evalCode(source)
     if (result.error) { const error = context.dump(result.error); result.error.dispose(); throw new Error(JSON.stringify(error)) }
     try { return JSON.parse(context.getString(result.value)) } finally { result.value.dispose() }
   }
   try {
-    evaluate(artifact.bundle.code + '\n;const task = ZErrorSitePackage.create(' + JSON.stringify({ tool, args, resume }) + '); JSON.stringify(true)')
+    evaluate(artifact.bundle.code + '\n;const task = ZErrorSitePackage.create(' + JSON.stringify({ tool, args, resume }) + '); JSON.stringify(true)', true)
     let receipt = null
     for (let index = 0; index < 512; index++) {
       const step = evaluate('JSON.stringify(task.next(' + JSON.stringify(receipt) + '))')
