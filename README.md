@@ -17,7 +17,7 @@ npm run dev
 
 命名空间为 `browser_site_chaoxing__`：`login`、`catalog`、`read_questions`、`answer_questions`、`study`、`read_document`、`discussion`。脚本通过固定的 document/media/credentials 命令驱动网页，不使用网页 eval、网络或文件系统。验证码原图交给模型识别，凭据始终由宿主隔离。
 
-读题、填答和复核按小批次进行；未知题型保留给 Agent 核对，不保存、交卷或伪造完成状态。题库服务请求、网络答案监听、字体解码尚无对应通用宿主接口，未假装迁移这些能力；详见 [作答边界](skills/chaoxing/references/homework.md)。原生浏览器仍需实站回归；本仓库 CI 负责编译契约及确定性流程样例。
+读题、填答和复核按小批次进行，实填状态同步到软件题目面板。`auto_answer` 使用页面已公布解析、本地题库和模型；本仓库没有声明远程题库或解析上传服务。未知、含图、截断或混淆字体题目保留给 Agent 核对，不保存、交卷或伪造完成状态。详见 [作答边界](skills/chaoxing/references/homework.md)。原生浏览器仍需实站回归；本仓库 CI 负责编译契约及确定性流程样例。
 
 ## 校验与发布
 

@@ -4,6 +4,7 @@ import { mkdir, readFile, readdir, rename, writeFile, rm } from 'node:fs/promise
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createServer } from 'node:http'
+import { automations } from '../src/runtime/rules.js'
 import { tools } from '../src/runtime/tools.js'
 
 const root = fileURLToPath(new URL('../', import.meta.url)), out = resolve(root, 'dist')
@@ -32,7 +33,7 @@ const options = {
     builder.onEnd(async result => {
       if (result.errors.length) return
       const code = result.outputFiles[0].text
-      const runtime = { apiVersion: 2, bundle: { code, sha256: digest(code) }, tools }
+      const runtime = { automations, apiVersion: 2, bundle: { code, sha256: digest(code) }, tools }
       if (Buffer.byteLength(code) > 256 * 1024 || Buffer.byteLength(JSON.stringify(tools)) > 64 * 1024) throw new Error('Runtime artifact exceeds host limits')
       const bytes = JSON.stringify(runtime, null, 2) + '\n'
       await mkdir(out, { recursive: true })

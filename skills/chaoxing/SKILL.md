@@ -11,7 +11,7 @@ license: MIT
 - 登录调用 `browser_site_chaoxing__login`。账号密码只在聊天中的安全表单填写，等待用户点击「继续」。模型不会读取密码。仅 `loggedIn=true` 表示已核对成功。
 - 返回 `captcha` 时识别附带的验证码原图，携带同一个 `captcha_id` 和 `captcha_code` 再调用。密码错误与验证码失效分开处理，不能重复提交错误密码。验证码变化或文档更换后重新获取。
 - 列表使用 `browser_site_chaoxing__catalog`，`kind` 为 `courses`、`homework` 或 `chapters`。按 `offset` 继续当前页，网页分页用 `next_page`。`open_id` 来自刚读取的条目，按名称打开须唯一匹配。
-- 当前作业或章节测验使用 `browser_site_chaoxing__read_questions`；每批最多八题。用通用题库检索（如当前工具提供）或模型推理得到已核实答案，再用 `browser_site_chaoxing__answer_questions` 填写并回读。不得把填入网页当成答案正确或已交卷。
+- 用户要求作答时使用 `browser_site_chaoxing__auto_answer`，每批最多四题，按回执的 `assignment_id` 与 `next_offset` 续批；用户限定题号时传 `question_range={start,end}`，不得扩大范围。只读使用 `browser_site_chaoxing__read_questions`（最多八题）；手工核实后的答案可用 `browser_site_chaoxing__answer_questions` 填写并回读。实填状态自动显示在软件题目面板；`verified` 仅表示实填一致，不表示答案正确或已交卷。
 - 当前章节使用 `browser_site_chaoxing__study`。`read_only=true` 只复核，`current_only=true` 限定当前小节，`video_only=true` 限定媒体。视频在一次工具调用中等待事件，之后重新检查平台标记。遇到测验或讨论交回 Agent 处理，再继续原用户范围。
 - 返回 `workflowPending=true` 时保留了检查点。恢复先重新读页面，不重放旧 DOM 定位。发布结果不明时不自动再次发送。
 

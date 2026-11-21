@@ -21,15 +21,39 @@ export function host(html, url) {
     }
     return parts.join(' > ')
   }
+  const serviceResponses = new Map(), payloads = new Map(), saved = new Map(), publications = []
+  let requestSequence = 0
   const state = { ok: true, paused: true, ended: false, muted: false, current: 0, duration: 5, ready: 4 }
-  const io = { window, events, receipts, state, imageHash: 'a'.repeat(64),
+  const io = { window, events, receipts, state, saved, publications, authenticated: true, bankRows: [], modelResponse: '[]', onService: () => ({ status: 404, data: {} }), imageHash: 'a'.repeat(64),
     document: () => check(), reload: () => { loader += '-new' },
     navigate: (url, html) => { dom.reconfigure({ url }); loader += '-new'; if (html !== undefined) window.document.body.innerHTML = html },
     onClick: () => {}, onWait: () => {}, onMediaEnd: () => {},
     async execute(op, args) {
       events.push({ op, args: plain(args) })
       let result
-      if (op === 'document.list') result = { ok: true, documents: [check()] }
+      if (op === 'questions.publish') { publications.push(plain(args)); result = { ok: true } }
+      else if (op === 'service.session') result = io.authenticated ? { ok: true, authenticated: true, session_id: 'service-grant' } : args.interactive ? { ok: false, denied: true, reason: 'login_cancelled' } : { ok: true, authenticated: false }
+      else if (op === 'service.check') result = io.authenticated ? { ok: true } : { ok: false, reason: 'session_changed' }
+      else if (op === 'state.read') result = { ok: true, json: saved.get(args.key) || null }
+      else if (op === 'state.write') { saved.set(args.key, args.json); result = { ok: true } }
+      else if (op === 'payload.from_state') {
+        const root = JSON.parse(args.json), rows = args.keys.flatMap(key => JSON.parse(saved.get(key)).subjects)
+        root.data.paperSubjectList = rows; payloads.set('payload', root); result = { ok: true, payload_id: 'payload', count: rows.length }
+      }
+      else if (op === 'service.request') {
+        const reply = io.onService(args, payloads.get(args.payload_id)); const request_id = 'request-' + ++requestSequence
+        serviceResponses.set(request_id, reply.data)
+        result = { ok: true, request_id, status: reply.status, authenticationRejected: reply.status === 401 }
+      }
+      else if (op === 'service.read') {
+        let value = serviceResponses.get(args.request_id)
+        for (const key of args.pointer.split('/').slice(1)) value = value?.[key]
+        if (Array.isArray(value)) { const offset = args.offset || 0, limit = args.limit || 16; result = { ok: true, total: value.length, items: value.slice(offset, offset + limit), next_offset: offset + limit < value.length ? offset + limit : -1 } }
+        else result = { ok: true, found: value !== undefined, value: value ?? null }
+      }
+      else if (op === 'knowledge.search') result = { ok: true, rows: io.bankRows, truncated: false }
+      else if (op === 'model.generate') result = { ok: true, text: typeof io.modelResponse === 'function' ? io.modelResponse(args) : io.modelResponse }
+      else if (op === 'document.list') result = { ok: true, documents: [check()] }
       else if (op === 'browser.wait') { io.onWait(); result = { ok: true } }
       else if (op === 'workflow.checkpoint') { io.checkpoint = plain(args.state); result = { ok: true, checkpoint_id: 'saved' } }
       else {
@@ -45,7 +69,7 @@ export function host(html, url) {
               selector: locator(node), index: offset + index + 1, tag: node.tagName.toLowerCase(),
               text: node.type === 'password' || node.hasAttribute('data-zerror-private') || node.tagName === 'TEXTAREA' ? '' : node.textContent.slice(0, 2048),
               visible: visible(node), disabled: node.disabled || false, checked: node.checked || false, selected: node.selected || false,
-              hasValue: Boolean(node.value), valueIsTrue: node.type === 'hidden' && /^(1|true)$/i.test(node.value), scroll: { top: 0, max: 0, viewport: 100 },
+              choice: ['radio', 'checkbox'].includes(node.type) && /^[A-Z]$/.test(node.value) ? node.value : '', hasValue: Boolean(node.value), valueIsTrue: node.type === 'hidden' && /^(1|true)$/i.test(node.value), scroll: { top: 0, max: 0, viewport: 100 },
               attributes: Object.fromEntries(['id', 'class', 'type', 'name', 'role', 'href', 'src', 'alt', 'title', 'aria-label', 'aria-checked', 'aria-selected', 'aria-disabled', 'placeholder'].map(key => [key, node.getAttribute(key) || ''])),
             })), total: all.length, truncated: all.length > offset + args.limit }
           } else if (!node && !op.startsWith('media.')) result = { ok: false, reason: 'not_found' }
@@ -56,7 +80,8 @@ export function host(html, url) {
           else if (op === 'document.fill') {
             assert.notEqual(node.type, 'password'); assert(!node.hasAttribute('data-zerror-private'))
             node.value = args.text; node.dispatchEvent(new window.Event('input', { bubbles: true })); result = { ok: true, filled: true }
-          } else if (op === 'document.compare') result = node.type === 'password' || node.hasAttribute('data-zerror-private') ? { ok: false, reason: 'private_input' } : { ok: true, matches: node.value === args.text }
+          } else if (op === 'document.value') result = node.type === 'password' || node.hasAttribute('data-zerror-private') ? { ok: false, reason: 'private_input' } : { ok: true, value: node.value || '' }
+          else if (op === 'document.compare') result = node.type === 'password' || node.hasAttribute('data-zerror-private') ? { ok: false, reason: 'private_input' } : { ok: true, matches: node.value === args.text }
           else if (op === 'document.click') { node.click(); io.onClick(node); result = { ok: true, dispatched: true } }
           else if (op === 'document.scroll' || op === 'document.select') result = { ok: true }
           else if (op === 'media.read') result = { ...state }

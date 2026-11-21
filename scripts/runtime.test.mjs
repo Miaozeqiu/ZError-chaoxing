@@ -216,3 +216,117 @@ test('a truncated tab list cannot prove the whole section complete', { skip: cx 
   try { assert.equal((await execute('study', { read_only: true }, io)).complete, false) }
   finally { io.close() }
 })
+test('automatic answering queries the bank and publishes actual progress without a model round trip', async () => {
+  const io = paper(6)
+  io.bankRows = [{ id: 7, answer: '选项一' }]
+  try {
+    const done = await execute('auto_answer', { limit: 2, use_model: false }, io)
+    assert.equal(done.items.length, 2)
+    assert(done.items.every(item => item.status === 'verified' && item.source === 'bank'))
+    assert(io.publications.some(update => update.phase === 'read' && update.questions.length === 2))
+    assert(io.publications.some(update => update.phase === 'result' && update.questions[0].actual.choices[0] === 'A'))
+    assert(!io.events.some(event => event.op === 'model.generate'))
+  } finally { io.close() }
+})
+test('model fallback receives only unresolved questions in the current batch', async () => {
+  const io = paper(10)
+  io.modelResponse = args => JSON.stringify(JSON.parse(args.prompt).map(question => ({ id: question.id, answer: ['B'] })))
+  try {
+    const done = await execute('auto_answer', { limit: 2 }, io)
+    assert(done.items.every(item => item.status === 'verified' && item.source === 'model'))
+    const [request] = io.events.filter(event => event.op === 'model.generate')
+    assert.equal(JSON.parse(request.args.prompt).length, 2)
+    assert(!request.args.prompt.includes('合成测试题目 3'))
+  } finally { io.close() }
+})
+test('server answers are matched by option content after reordering', { skip: cx }, async () => {
+  const io = paper()
+  io.onService = args => ({ status: 200, data: { data: { id: 'paper', courseId: 'sample', paperSubjectList: [{ subjectName: '合成测试题目 1', subjectType: 1,
+    rightAnswer: 'B', subjectOptions: [{ optionHead: 'A', optionContent: '选项二' }, { optionHead: 'B', optionContent: '选项一' }] }] } } })
+  try {
+    const done = await execute('auto_answer', { use_model: false }, io)
+    assert.equal(done.items[0].source, 'server'); assert.equal(done.items[0].status, 'verified')
+    assert(io.window.document.querySelector('.common_test_option').classList.contains('checked'))
+    assert(!io.events.some(event => event.op === 'knowledge.search'))
+  } finally { io.close() }
+})
+test('cancelled bank login or account changes never continue filling', { skip: cx }, async () => {
+  const io = paper(); io.authenticated = false
+  try {
+    await assert.rejects(execute('auto_answer', {}, io), /login_cancelled/)
+    assert(!io.events.some(event => event.op === 'document.click' || event.op === 'knowledge.search' || event.op === 'model.generate'))
+  } finally { io.close() }
+})
+test('complete official review is uploaded automatically and is not duplicated', { skip: cx }, async () => {
+  const html = '<div class="common_look_title"><h6>合成解析试卷</h6></div><div class="common_look_main"><div class="el-col">共 1 题</div><div class="questiono-item"><div class="questiono-header"><b>1</b><h6><span class="processing_img">合成题干</span></h6>单选题</div><button class="common_test_option"><input type="radio" value="A"><p>选项一</p></button><button class="common_test_option"><input type="radio" value="B"><p>选项二</p></button><span class="common_test_correct">正确答案</span><span class="common_test_html">A</span></div></div>'
+  const io = host(html, 'https://www.zjooc.cn/course/study/sample/homework/result/paper')
+  const uploads = []
+  io.onService = (args, payload) => {
+    if (args.method === 'POST') { uploads.push(payload); return { status: 200, data: { ok: true } } }
+    return { status: 200, data: { has_original_json: uploads.length > 0 } }
+  }
+  try {
+    assert.equal((await execute('sync_review', {}, io)).status, 'synced')
+    assert.equal(uploads.length, 1); assert.equal(uploads[0].data.paperSubjectList.length, 1)
+    assert.equal(uploads[0].data.paperSubjectList[0].rightAnswer, 'A')
+    assert.equal((await execute('sync_review', {}, io)).status, 'synced')
+    assert.equal(uploads.length, 1)
+    assert(!io.events.some(event => event.op === 'model.generate' || event.op === 'document.click'))
+  } finally { io.close() }
+})
+test('partial review cannot occupy the server slot for a complete paper', { skip: cx }, async () => {
+  const io = host('<div class="common_look_title"><h6>未完整加载</h6></div><div class="common_look_main"><div class="el-col">共 2 题</div><div class="questiono-item"><div class="questiono-header">单选题 合成题</div></div></div>', 'https://www.zjooc.cn/course/study/sample/homework/result/paper')
+  try {
+    assert.equal((await execute('sync_review', {}, io)).status, 'loading')
+    assert(!io.events.some(event => event.op === 'service.request'))
+  } finally { io.close() }
+})
+
+test('displayed question ranges are isolated and duplicate displayed numbers cannot authorize writes', async () => {
+  const io = paper(3); io.bankRows = [{ answer: '选项一' }]
+  try {
+    const done = await execute('auto_answer', { question_range: { start: 2, end: 2 }, use_model: false }, io)
+    assert.equal(done.items.length, 1); assert.equal(done.items[0].status, 'verified')
+    const read = await execute('read_questions', {}, io)
+    assert.deepEqual(read.questions.map(question => question.actual.choices), [[], ['A'], []])
+    const heading = io.window.document.querySelectorAll(cx ? '.mark_name' : '.questiono-header')[2]
+    heading.textContent = heading.textContent.replace('3.', '2.')
+    assert.equal((await execute('auto_answer', { question_range: { start: 2, end: 2 } }, io)).status, 'ambiguous_range')
+  } finally { io.close() }
+})
+test('long option text and unbounded control lists require review instead of matching truncated text', async () => {
+  const io = paper()
+  io.window.document.querySelector(cx ? '.answer_p' : '.common_test_option').textContent = '长'.repeat(500)
+  try { assert.equal((await execute('read_questions', {}, io)).questions[0].supported, false) }
+  finally { io.close() }
+})
+test('changed questions during inference and conflicting bank hits do not authorize a click', async () => {
+  const io = paper(); io.bankRows = [{ answer: '选项一' }, { answer: '选项二' }]
+  try {
+    const conflict = await execute('auto_answer', { use_model: false }, io)
+    assert.equal(conflict.items[0].status, 'no_match')
+    io.modelResponse = args => {
+      const data = JSON.parse(args.prompt)
+      io.window.document.querySelector(cx ? '.mark_name' : '.questiono-header').textContent = '另一道题'
+      return JSON.stringify([{ id: data[0].id, answer: ['A'] }])
+    }
+    assert.equal((await execute('auto_answer', {}, io)).status, 'stale')
+    assert(!io.events.some(event => event.op === 'document.click'))
+  } finally { io.close() }
+})
+test('forbidden server responses stop before local or model fallback', { skip: cx }, async () => {
+  const io = paper(); io.onService = () => ({ status: 403, data: { error: 'denied' } })
+  try {
+    assert.equal((await execute('auto_answer', {}, io)).status, 'access_denied')
+    assert(!io.events.some(event => ['document.click','knowledge.search','model.generate'].includes(event.op)))
+  } finally { io.close() }
+})
+test('duplicate server subjects are ambiguous even when one answer looks usable', { skip: cx }, async () => {
+  const io = paper()
+  const subject = { subjectName: '合成测试题目 1', subjectType: 1, rightAnswer: 'A', subjectOptions: [{ optionHead: 'A', optionContent: '选项一' }, { optionHead: 'B', optionContent: '选项二' }] }
+  io.onService = () => ({ status: 200, data: { data: { id: 'paper', courseId: 'sample', paperSubjectList: [subject, { ...subject, rightAnswer: 'B' }] } } })
+  try {
+    assert.equal((await execute('auto_answer', { use_model: false }, io)).items[0].status, 'no_match')
+    assert(!io.events.some(event => event.op === 'document.click'))
+  } finally { io.close() }
+})

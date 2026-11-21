@@ -39,3 +39,19 @@ export const viewer = {
   pageSelect: '#pageSelector, #pageSelect',
   marker: '#pageNumber, #pageNum, #currentPage, #pagejump, [aria-current="page"], .swiper-slide-active, #numPages, #img .documentImg',
 }
+
+export const paperRules = { title: '.mark_title, .work-title, .newZy_TItle, h1', totalLabels: '.totalQuestion, .total-question, .mark_sum', indexItems: '.answerCard li' }
+export function paperForURL(value) {
+  const match = /^https:\/\/([^/:?#]+)([^?#]*)(?:\?([^#]*))?/.exec(value)
+  if (!match || !(match[1] === 'chaoxing.com' || match[1].endsWith('.chaoxing.com'))) return null
+  const params = Object.fromEntries((match[3] || '').split('&').map(pair => { const [key, value = ''] = pair.split('='); return [key.toLowerCase(), decodeURIComponent(value)] }))
+  const path = match[2].toLowerCase(), stage = /\/(?:view|viewwork|review)\/?$/.test(path) ? 'result' : 'do'
+  return { key: [params.courseid, params.classid || params.clazzid, params.workid || params.workanswerid || params.knowledgeid, match[2]].join(':'),
+    courseId: params.courseid || '', paperId: params.workid || params.workanswerid || '', kind: /dohomework/.test(path) ? 'quiz' : 'homework', stage, single: false, url: value }
+}
+Object.assign(questions, { choiceText: ':is(.answer_p,.after)', number: ':scope > i', subjectTypes: { single: 0, multiple: 1, judgement: 3, completion: 2 } })
+
+export const answerService = null
+
+
+export const automations = []
