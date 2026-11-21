@@ -16,9 +16,9 @@ export function* documents() {
   if (!receipt.documents?.length) throw new Error('没有可操作的站内文档')
   return receipt.documents
 }
-export function* query(document, selector, limit = 40, offset = 0) {
+export function* query(document, selector, limit = 40, offset = 0, attributes) {
   if (!selector) return { nodes: [], total: 0, truncated: false }
-  return yield* call('document.query', { document, selector, limit, ...(offset ? { offset } : {}) })
+  return yield* call('document.query', { document, selector, limit, ...(offset ? { offset } : {}), ...(attributes ? { attributes } : {}) })
 }
 export function* nodes(document, selector, limit = 40, offset = 0) { return (yield* query(document, selector, limit, offset)).nodes || [] }
 export function* one(document, selector, visible = false) {

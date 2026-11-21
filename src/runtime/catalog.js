@@ -1,7 +1,11 @@
+import { chapterCatalog } from './chapterCatalog.js'
+import { courseCatalog } from './courses.js'
 import { child, documents, nodes, query, one, click, pause, stableId, result } from './host.js'
 import { catalog } from './rules.js'
 
 export function* catalogFlow(args) {
+  if (args.kind === 'chapters') return yield* chapterCatalog(args)
+  if (args.kind === 'courses') return yield* courseCatalog(args)
   const rule = catalog[args.kind]
   if (!rule) return result('unsupported', '该类型没有仓库规则。')
   let all = yield* documents()

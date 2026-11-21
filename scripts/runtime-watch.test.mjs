@@ -21,7 +21,7 @@ test('development watch atomically updates tool schemas and automation metadata 
     throw new Error('Runtime watch did not update: ' + log.slice(-3000))
   }
   try {
-    for (const relative of ['src/runtime', 'skills/' + site, 'scripts/build-scripts.mjs']) {
+    for (const relative of ['src', 'skills/' + site, 'scripts/build-scripts.mjs']) {
       await mkdir(dirname(join(temp, relative)), { recursive: true })
       await cp(join(root, relative), join(temp, relative), { recursive: true })
     }

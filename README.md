@@ -15,9 +15,9 @@ npm run dev
 
 ## 工具与边界
 
-命名空间为 `browser_site_chaoxing__`：`login`、`catalog`、`read_questions`、`answer_questions`、`study`、`read_document`、`discussion`。脚本通过固定的 document/media/credentials 命令驱动网页，不使用网页 eval、网络或文件系统。验证码原图交给模型识别，凭据始终由宿主隔离。
+命名空间为 `browser_site_chaoxing__`：`login`、`catalog`、`start_course`、`chapter_state`、`read_questions`、`answer_questions`、`auto_answer`、`study`、`read_document`、`discussion`、`decode_font`。脚本通过固定的 document/media/credentials 命令驱动网页，不使用网页 eval、网络或文件系统。验证码原图交给模型识别，凭据始终由宿主隔离。
 
-读题、填答和复核按小批次进行，实填状态同步到软件题目面板。`auto_answer` 使用页面已公布解析、本地题库和模型；本仓库没有声明远程题库或解析上传服务。未知、含图、截断或混淆字体题目保留给 Agent 核对，不保存、交卷或伪造完成状态。详见 [作答边界](skills/chaoxing/references/homework.md)。原生浏览器仍需实站回归；本仓库 CI 负责编译契约及确定性流程样例。
+读题、填答和复核按小批次进行，实填状态同步到软件题目面板。`auto_answer` 使用页面已公布解析、本地题库和模型；本仓库没有声明远程题库或解析上传服务。字体参考表及许可作为同一编译包的校验资源分发，读题时自动匹配实际字形。未知、含图、截断或低置信度字体题目保留给 Agent 核对，不保存、交卷或伪造完成状态。详见 [作答边界](skills/chaoxing/references/homework.md)。原生浏览器仍需实站回归；本仓库 CI 负责编译契约及确定性流程样例。
 
 ## 校验与发布
 
@@ -28,3 +28,5 @@ git diff --exit-code -- skills/chaoxing/runtime.json
 ```
 
 CI 使用与软件相同的 QuickJS 0.32、内存和执行限额运行产物，检查编译包和源码一致。发布经验仓库不会发布客户端或部署 Open 服务。MIT，见 [LICENSE](LICENSE)。
+
+`sync_page` 由软件按页面生命周期自动运行，同步章节状态和分页题目；不点击、登录或调用模型。源代码、字体数据和元数据处于同一个构建图，开发热更新同时更新工具定义与资源。

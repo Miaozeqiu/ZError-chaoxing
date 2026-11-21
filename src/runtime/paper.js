@@ -15,7 +15,7 @@ export function* paperMetadata(document, base, total) {
     assignmentId: stableId([base.key, document.url]), stateKey: 'review/' + stableId([base.courseId, base.kind, base.paperId]) }
 }
 export function* publishBatch(paper, questions, phase = 'read') {
-  yield* call('questions.publish', { assignmentId: paper.assignmentId, title: paper.title,
+  yield* call('questions.publish', { document: paper.document, assignmentId: paper.assignmentId, title: paper.title,
     total: Math.max(paper.total, paper.declared), phase,
     questions: questions.map(question => ({ question_id: question.id, number: question.number, order: question.order || question.number,
       stem: question.stem, type: question.type === 'unknown' ? 'unsupported' : question.type,

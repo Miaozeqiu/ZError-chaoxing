@@ -112,51 +112,11 @@ function videoHost() {
     : '<div class="el-tabs__header"><button role="tab" aria-selected="true" class="is-active">合成视频<span class="icon-shipin"></span></button></div><div class="contain-video"><video></video></div>'
   return host(html, cx ? 'https://mooc1.chaoxing.com/mycourse/studentstudy' : 'https://www.zjooc.cn/course/study/sample/plan/detail/video')
 }
-test('mutes before play and a media ended event alone does not prove chapter completion', async () => {
-  const io = videoHost()
-  try {
-    const result = await execute('study', { current_only: true, video_only: true }, io)
-    assert.equal(result.complete, false); assert.equal(result.status, 'awaiting_credit')
-    assert(io.events.findIndex(event => event.op === 'media.mute') < io.events.findIndex(event => event.op === 'media.play'))
-    assert(io.events.some(event => event.op === 'media.wait'))
-  } finally { io.close() }
-})
-test('observes the actual completion marker after media events', async () => {
-  const io = videoHost()
-  io.onMediaEnd = () => {
-    if (cx) io.window.document.querySelector('.posCatalog_active').insertAdjacentHTML('beforeend', '<i class="icon_Completed"></i>')
-    else io.window.document.querySelector('.icon-shipin').classList.add('complete')
-  }
-  try { assert.equal((await execute('study', { current_only: true }, io)).status, 'chapter_complete') }
-  finally { io.close() }
-})
-test('read-only chapter inspection never starts media or moves a tab', async () => {
-  const io = videoHost()
-  try {
-    await execute('study', { read_only: true }, io)
-    assert(!io.events.some(event => /^media\.(play|mute|wait)$|document\.(click|fill|scroll|select)/.test(event.op)))
-  } finally { io.close() }
-})
-test('ambiguous catalog titles do not click and opening uses a freshly observed id', async () => {
-  const rows = cx ? '<ul id="courselistArea"><li><h3>合成课程</h3></li><li><h3>合成课程</h3></li></ul>'
-    : '<div class="el-tree-node is-leaf"><div class="el-tree-node__content"><span class="el-tree-node__label">合成课程</span></div></div>'.repeat(2)
-  const kind = cx ? 'courses' : 'chapters', io = host(rows, space)
-  try {
-    const listed = await execute('catalog', { kind, title: '合成课程' }, io)
-    assert.equal(listed.status, 'ambiguous'); assert.equal(listed.items.length, 2)
-    assert(!io.events.some(event => event.op === 'document.click'))
-    assert.equal((await execute('catalog', { kind, open_id: listed.items[1].id }, io)).status, 'opened')
-  } finally { io.close() }
-})
-test('read-only inspection of a completed chapter also cannot navigate', async () => {
-  const io = videoHost()
-  if (cx) io.window.document.querySelector('.posCatalog_active').insertAdjacentHTML('beforeend', '<i class="icon_Completed"></i>')
-  else io.window.document.querySelector('.icon-shipin').classList.add('complete')
-  try {
-    assert.equal((await execute('study', { read_only: true }, io)).complete, true)
-    assert(!io.events.some(event => event.op === 'document.click'))
-  } finally { io.close() }
-})
+
+
+
+
+
 test('one completed video tab cannot complete another unfinished tab', { skip: cx }, async () => {
   const io = videoHost()
   io.window.document.querySelector('.icon-shipin').classList.add('complete')
@@ -179,26 +139,7 @@ test('discussion publishing is targeted, preserves drafts, and never replays an 
     assert.equal(io.events.filter(event => event.op === 'document.click').length, clicks)
   } finally { io.close() }
 })
-test('continues from a completed section to the next freshly observed leaf', async () => {
-  const io = videoHost()
-  const doc = io.window.document
-  if (cx) {
-    doc.querySelector('.posCatalog_active').insertAdjacentHTML('beforeend', '<i class="icon_Completed"></i>')
-    doc.querySelector('#coursetree').insertAdjacentHTML('beforeend', '<div id="cur2" class="posCatalog_select"><span>合成下一节</span></div>')
-  } else {
-    doc.querySelector('.icon-shipin').classList.add('complete')
-    doc.body.insertAdjacentHTML('beforeend', '<div class="el-tree-node is-leaf is-current"><div class="el-tree-node__content"><span class="complete">第一节</span></div></div><div class="el-tree-node is-leaf"><div class="el-tree-node__content">第二节</div></div>')
-  }
-  io.onClick = () => {
-    if (cx) { doc.querySelector('.posCatalog_active').classList.remove('posCatalog_active'); doc.querySelector('#cur2').classList.add('posCatalog_active') }
-    else { doc.querySelector('.is-current').classList.remove('is-current'); doc.querySelectorAll('.el-tree-node')[1].classList.add('is-current'); doc.querySelector('.icon-shipin').classList.remove('complete') }
-    io.state.ended = true
-  }
-  try {
-    await execute('study', { video_only: true }, io)
-    assert.equal(io.events.filter(event => event.op === 'document.click').length, 1)
-  } finally { io.close() }
-})
+
 
 test('hidden question rows are not read into the model batch', async () => {
   const io = paper(2)

@@ -1,3 +1,5 @@
+import { taskDocuments } from './chapterState.js'
+import { decodeText } from './font.js'
 import { call, child, documents, nodes, query, one, click, stableId, result } from './host.js'
 import { questions as rules, paperForURL } from './rules.js'
 import { paperMetadata, publishBatch } from './paper.js'
@@ -6,7 +8,9 @@ const normalize = text => text.replace(/\s+/g, ' ').trim()
 export function* readQuestion(document, row, paper) {
   const heading = yield* nodes(document, child(row, rules.heading), 2)
   const stemNodes = rules.stem ? yield* nodes(document, child(row, rules.stem), 2) : []
-  let stem = (stemNodes[0]?.text || heading[0]?.text || '').trim()
+  const stemSource = (stemNodes[0]?.text || heading[0]?.text || '').trim()
+  const stemDecoded = yield* decodeText(document, stemNodes[0] || heading[0], stemSource)
+  let fontUncertain = Boolean(stemDecoded.unavailable), stem = stemDecoded.text
   if (!stemNodes.length) stem = stem.replace(/^\d+\s*[.、．]\s*/, '').replace(/^[（(](?:单选题|多选题|判断题|填空题)[）)]\s*/, '')
   const stemTooLong = stem.length > 2000
   stem = normalize(stem).slice(0, 2000)
@@ -29,8 +33,10 @@ export function* readQuestion(document, row, paper) {
       || own.find(control => /^[A-Z]$/.test(control.text.trim()))?.text.trim()
       || /^([A-Z])(?:[\s.、．)）]|$)/.exec(node.text.trim())?.[1] || String.fromCharCode(65 + options.length)
     const body = rules.choiceText ? yield* nodes(document, child(node, rules.choiceText), 1) : []
-    if ((body[0]?.text || node.text).length > 400) optionTooLong = true
-    options.push({ key: label, text: normalize(body[0]?.text || node.text).replace(new RegExp('^' + label + '[.、．]\\s*'), '').slice(0, 400),
+    const decoded = yield* decodeText(document, body[0] || node, body[0]?.text || node.text)
+    fontUncertain ||= Boolean(decoded.unavailable)
+    if (decoded.text.length > 400) optionTooLong = true
+    options.push({ key: label, text: normalize(decoded.text).replace(new RegExp('^' + label + '[.、．]\\s*'), '').slice(0, 400),
       selected: selected(node) || own.some(selected), node })
   }
   const fieldPage = yield* query(document, child(row, rules.fields), 16)
@@ -48,7 +54,7 @@ export function* readQuestion(document, row, paper) {
     else actualBlanks.push(receipt.value)
   }
   const visual = (yield* nodes(document, child(row, rules.visual), 1)).length > 0
-  const unsupported = stemTooLong || optionTooLong || optionPage.truncated || fieldPage.truncated || !readable || new Set(options.map(option => option.key)).size !== options.length || !stem || visual || type === 'unknown'
+  const unsupported = fontUncertain || stemTooLong || optionTooLong || optionPage.truncated || fieldPage.truncated || !readable || new Set(options.map(option => option.key)).size !== options.length || !stem || visual || type === 'unknown'
     || /材料题|完形|完型|听力|简答|论述/.test(heading[0]?.text.slice(0, 100) || '')
     || (type === 'completion' ? !fields.length || options.length > 0 : options.length < 2 || options.length > 16 || fields.length > 0)
   let review = rules.review ? yield* nodes(document, child(row, rules.review), 1) : []
@@ -62,7 +68,7 @@ export function* readQuestion(document, row, paper) {
   const publicOptions = options.map(({ node, ...option }) => option)
   const id = JSON.stringify([document.frameId, document.loaderId, document.url, row.index,
     stableId([number, stem, type, publicOptions.map(({ key, text }) => ({ key, text })), fields.length])])
-  return { id, number, order: paper.single ? number : row.index, stem, type, supported: !unsupported, visual,
+  return { id, number, order: paper.single ? number : row.index, stem, type, supported: !unsupported, visual: visual || fontUncertain,
     subject_type: type === 'multiple' && rules.alternateType && /不定项/.test(heading[0]?.text || '') ? rules.alternateType : rules.subjectTypes?.[type] || 0, options: publicOptions,
     blanks: fields.map((field, index) => ({ index: index + 1, filled: field.hasValue })),
     actual: type === 'completion' ? { blanks: actualBlanks } : { choices: options.filter(option => option.selected).map(option => option.key) },
@@ -71,13 +77,15 @@ export function* readQuestion(document, row, paper) {
 }
 export const publicQuestion = ({ _options, _fields, _document, _row, _paper, ...question }) => question
 export function* readBatch(args) {
-  const candidates = [], docs = yield* documents()
+  const candidates = [], docs = yield* taskDocuments('quiz')
   const range = args.question_range
   if (range && (!Number.isSafeInteger(range.start) || !Number.isSafeInteger(range.end) || range.start < 1 || range.end < range.start || range.end > 10000)) return { error: 'invalid_range' }
   for (const document of docs) {
     const base = paperForURL(document.url)
     if (!base) continue
-    let found = yield* query(document, rules.rows, range ? 40 : args.limit || 4, range ? 0 : args.offset || 0)
+    const encrypted = (yield* nodes(document, '.font-cxsecret', 1)).length > 0
+    const batchLimit = encrypted ? 1 : args.limit || 4
+    let found = yield* query(document, rules.rows, range ? 40 : batchLimit, range ? 0 : args.offset || 0)
     if (!found.nodes.some(row => row.visible)) continue
     const paper = yield* paperMetadata(document, base, found.total)
     if (args.assignment_id && args.assignment_id !== paper.assignmentId) continue
@@ -97,7 +105,7 @@ export function* readBatch(args) {
       })
       const numbers = inRange.map(row => Number((singleNumber[0]?.text || row.text).match(/^\s*(\d+)/)?.[1]))
       if (new Set(numbers).size !== numbers.length || (!paper.single && numbers.length !== range.end - range.start + 1) || !numbers.length) return { error: 'ambiguous_range' }
-      const offset = args.offset || 0, limit = args.limit || 4
+      const offset = args.offset || 0, limit = batchLimit
       found = { total: paper.total, nodes: inRange.slice(offset, offset + limit), truncated: offset + limit < inRange.length }
       rangeNext = found.truncated ? offset + found.nodes.length : -1
     }
@@ -121,7 +129,7 @@ export function* currentQuestion(id) {
   let parts
   try { parts = JSON.parse(id) } catch { return null }
   if (!Array.isArray(parts) || parts.length !== 5 || !Number.isSafeInteger(parts[3]) || parts[3] < 1 || parts[3] > 10000) return null
-  const document = (yield* documents()).find(doc => doc.frameId === parts[0] && doc.loaderId === parts[1] && doc.url === parts[2])
+  const document = (yield* taskDocuments('quiz')).find(doc => doc.frameId === parts[0] && doc.loaderId === parts[1] && doc.url === parts[2])
   const base = document && paperForURL(document.url)
   if (!base) return null
   const [row] = yield* nodes(document, rules.rows, 1, parts[3] - 1)

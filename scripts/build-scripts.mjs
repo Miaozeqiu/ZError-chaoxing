@@ -27,22 +27,24 @@ async function experience(runtime) {
 const options = {
   absWorkingDir: root, entryPoints: { runtime: 'src/runtime/index.js', metadata: 'zerror-runtime-metadata' }, outdir: out, bundle: true, format: 'iife', globalName: 'ZErrorSitePackage',
   // QuickJS 0.32 rejects yield* inside for-of iterator expressions; preserve the tested statement layout.
-  target: 'es2020', write: false, minifyWhitespace: true, minifyIdentifiers: true, minifySyntax: false, legalComments: 'none',
+  loader: { '.bin': 'base64' }, target: 'es2020', write: false, minifyWhitespace: true, minifyIdentifiers: true, minifySyntax: false, legalComments: 'none',
   plugins: [{ name: 'runtime-artifact', setup(builder) {
     // One build graph pins metadata to the same source revision as the executable bundle.
     builder.onResolve({ filter: /^zerror-runtime-metadata$/ }, () => ({ path: 'metadata', namespace: 'runtime-metadata' }))
     builder.onLoad({ filter: /.*/, namespace: 'runtime-metadata' }, () => ({
-      contents: "export {tools} from './src/runtime/tools.js'; export {automations} from './src/runtime/rules.js';",
+      contents: "export {tools} from './src/runtime/tools.js'; export {automations} from './src/runtime/rules.js'; export {resources} from './src/runtime/resources.js';",
       resolveDir: root, loader: 'js',
     }))
     builder.onEnd(async result => {
       if (result.errors.length) return
       const code = result.outputFiles.find(file => basename(file.path) === 'runtime.js').text
       const metadata = result.outputFiles.find(file => basename(file.path) === 'metadata.js').text
-      const { tools, automations } = JSON.parse(runInNewContext(metadata + ';JSON.stringify({tools:ZErrorSitePackage.tools,automations:ZErrorSitePackage.automations})', Object.create(null), { timeout: 1000 }))
-      const runtime = { automations, apiVersion: 2, bundle: { code, sha256: digest(code) }, tools }
+      const { tools, automations, resources: resourceData } = JSON.parse(runInNewContext(metadata + ';JSON.stringify({tools:ZErrorSitePackage.tools,automations:ZErrorSitePackage.automations,resources:ZErrorSitePackage.resources})', Object.create(null), { timeout: 1000 }))
+      const resources = Object.entries(resourceData).map(([id, data]) => ({ id, size: Buffer.from(data, 'base64').length, sha256: digest(Buffer.from(data, 'base64')), data }))
+      const runtime = { resources, automations, apiVersion: 2, bundle: { code, sha256: digest(code) }, tools }
       if (Buffer.byteLength(code) > 256 * 1024 || Buffer.byteLength(JSON.stringify(tools)) > 64 * 1024) throw new Error('Runtime artifact exceeds host limits')
       const bytes = JSON.stringify(runtime, null, 2) + '\n'
+      if (Buffer.byteLength(bytes) > 2 * 1024 * 1024) throw new Error('Runtime resources exceed host limits')
       await mkdir(out, { recursive: true })
       await atomic(resolve(out, 'runtime.json'), bytes)
       await atomic(resolve(out, 'experience.json'), JSON.stringify(await experience(runtime), null, 2) + '\n')

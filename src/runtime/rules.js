@@ -17,7 +17,7 @@ export const questions = {
   types: { single: '单选|单项选择', multiple: '多选|多项选择', judgement: '判断', completion: '填空' },
   options: ':is(.answerBg,.Zy_ulTop > li)', fields: 'input[type="text"], textarea, [contenteditable="true"]',
   selectedClass: '(?:^|\\s)(?:check_answer|check_answer_dx|choice_answer|checked|selected|active|cur|is-checked)(?:\\s|$)',
-  visual: 'img,svg,canvas,math,mjx-container,.MathJax,.font-cxsecret,[class*="cxsecret"]', review: '.mark_answer',
+  visual: 'img,svg,canvas,math,mjx-container,.MathJax', review: '.mark_answer',
 }
 export const chapter = {
   rows: chapterRules.sidebar.target + ', ' + chapterRules.directory.row,
@@ -45,7 +45,9 @@ export function paperForURL(value) {
   const match = /^https:\/\/([^/:?#]+)([^?#]*)(?:\?([^#]*))?/.exec(value)
   if (!match || !(match[1] === 'chaoxing.com' || match[1].endsWith('.chaoxing.com'))) return null
   const params = Object.fromEntries((match[3] || '').split('&').map(pair => { const [key, value = ''] = pair.split('='); return [key.toLowerCase(), decodeURIComponent(value)] }))
-  const path = match[2].toLowerCase(), stage = /\/(?:view|viewwork|review)\/?$/.test(path) ? 'result' : 'do'
+  const path = match[2].toLowerCase()
+  if (!/\/(?:work|exam)\//.test(path) && !/\/(?:doWork|doHomework|viewWork|viewHomework|review|view)$/i.test(path)) return null
+  const stage = /\/(?:view|viewwork|review)\/?$/.test(path) ? 'result' : 'do'
   return { key: [params.courseid, params.classid || params.clazzid, params.workid || params.workanswerid || params.knowledgeid, match[2]].join(':'),
     courseId: params.courseid || '', paperId: params.workid || params.workanswerid || '', kind: /dohomework/.test(path) ? 'quiz' : 'homework', stage, single: false, url: value }
 }
@@ -54,4 +56,4 @@ Object.assign(questions, { choiceText: ':is(.answer_p,.after)', number: ':scope 
 export const answerService = null
 
 
-export const automations = []
+export const automations = [{ event: 'page', tool: 'sync_page' }]

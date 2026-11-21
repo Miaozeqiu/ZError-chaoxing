@@ -12,7 +12,10 @@ license: MIT
 - 返回 `captcha` 时识别附带的验证码原图，携带同一个 `captcha_id` 和 `captcha_code` 再调用。密码错误与验证码失效分开处理，不能重复提交错误密码。验证码变化或文档更换后重新获取。
 - 列表使用 `browser_site_chaoxing__catalog`，`kind` 为 `courses`、`homework` 或 `chapters`。按 `offset` 继续当前页，网页分页用 `next_page`。`open_id` 来自刚读取的条目，按名称打开须唯一匹配。
 - 用户要求作答时使用 `browser_site_chaoxing__auto_answer`，每批最多四题，按回执的 `assignment_id` 与 `next_offset` 续批；用户限定题号时传 `question_range={start,end}`，不得扩大范围。只读使用 `browser_site_chaoxing__read_questions`（最多八题）；手工核实后的答案可用 `browser_site_chaoxing__answer_questions` 填写并回读。实填状态自动显示在软件题目面板；`verified` 仅表示实填一致，不表示答案正确或已交卷。
+- 用户要求学习指定课程时优先调用 `browser_site_chaoxing__start_course`，传 `course_name`，同名课可传 `teacher`。它串联安全登录、学生课表匹配、章节目录和播放；恢复已有检查点时先核对原课程，不重新登录或重放导航。
+- `browser_site_chaoxing__chapter_state` 只读当前章节、选中页签和所属任务点。课程、章节和任务 iframe 必须来自当前实际文档；预加载页面不能代替当前任务。
 - 当前章节使用 `browser_site_chaoxing__study`。`read_only=true` 只复核，`current_only=true` 限定当前小节，`video_only=true` 限定媒体。视频在一次工具调用中等待事件，之后重新检查平台标记。遇到测验或讨论交回 Agent 处理，再继续原用户范围。
+- `sync_page` 是软件自动触发的被动同步，不必让用户或 Agent 手动调用；章节状态和小批题目直接进入软件，不占模型历史。混淆字体由读题工具按仓库内的参考字形自动解码；`decode_font` 供单独复核。字形未加载、匹配不唯一或置信度不足时不自动作答。
 - 返回 `workflowPending=true` 时保留了检查点。恢复先重新读页面，不重放旧 DOM 定位。发布结果不明时不自动再次发送。
 
 细则见 [登录](references/login.md)、[章节与阅读](references/study.md)、[作业与测验](references/homework.md)。

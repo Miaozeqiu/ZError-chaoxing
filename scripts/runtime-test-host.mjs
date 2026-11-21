@@ -8,10 +8,10 @@ import Ajv from 'ajv'
 export const artifact = JSON.parse(await readFile(new URL('../dist/runtime.json', import.meta.url)))
 const plain = value => JSON.parse(JSON.stringify(value))
 const validate = new Ajv({ strict: false, allErrors: true })
-export function host(html, url) {
+export function host(html, url, frameId = 'main') {
   const dom = new JSDOM(html, { url }), window = dom.window
   let loader = 'loader-1'
-  const events = [], receipts = [], check = () => ({ frameId: 'main', loaderId: loader, url: window.location.href })
+  const events = [], receipts = [], check = () => ({ frameId, loaderId: loader, url: window.location.href })
   const visible = node => !node.hidden && node.type !== 'hidden' && !node.closest('[hidden]')
   const locator = node => {
     const parts = []
@@ -31,7 +31,14 @@ export function host(html, url) {
     async execute(op, args) {
       events.push({ op, args: plain(args) })
       let result
-      if (op === 'questions.publish') { publications.push(plain(args)); result = { ok: true } }
+      if (op === 'resource.read') {
+        const asset = artifact.resources?.find(row => row.id === args.id); assert(asset, 'declared resource')
+        const bytes = Buffer.from(asset.data, 'base64'), end = Math.min(bytes.length, args.offset + args.length)
+        result = { ok: true, bytes: [...bytes.subarray(args.offset, end)], total: bytes.length, next_offset: end < bytes.length ? end : -1 }
+      }
+      else if (op === 'document.glyphs') result = io.onGlyphs ? io.onGlyphs(args) : { ok: false, reason: 'font_unavailable' }
+      else if (op === 'context.publish') { io.context = JSON.parse(args.json); result = { ok: true } }
+      else if (op === 'questions.publish') { publications.push(plain(args)); result = { ok: true } }
       else if (op === 'service.session') result = io.authenticated ? { ok: true, authenticated: true, session_id: 'service-grant' } : args.interactive ? { ok: false, denied: true, reason: 'login_cancelled' } : { ok: true, authenticated: false }
       else if (op === 'service.check') result = io.authenticated ? { ok: true } : { ok: false, reason: 'session_changed' }
       else if (op === 'state.read') result = { ok: true, json: saved.get(args.key) || null }
@@ -70,7 +77,8 @@ export function host(html, url) {
               text: node.type === 'password' || node.hasAttribute('data-zerror-private') || node.tagName === 'TEXTAREA' ? '' : node.textContent.slice(0, 2048),
               visible: visible(node), disabled: node.disabled || false, checked: node.checked || false, selected: node.selected || false,
               choice: ['radio', 'checkbox'].includes(node.type) && /^[A-Z]$/.test(node.value) ? node.value : '', hasValue: Boolean(node.value), valueIsTrue: node.type === 'hidden' && /^(1|true)$/i.test(node.value), scroll: { top: 0, max: 0, viewport: 100 },
-              attributes: Object.fromEntries(['id', 'class', 'type', 'name', 'role', 'href', 'src', 'alt', 'title', 'aria-label', 'aria-checked', 'aria-selected', 'aria-disabled', 'placeholder'].map(key => [key, node.getAttribute(key) || ''])),
+              fontFamily: window.getComputedStyle(node).fontFamily || '',
+              attributes: Object.fromEntries([...new Set([...args.attributes || [], 'id', 'class', 'type', 'name', 'role', 'href', 'src', 'alt', 'title', 'aria-label', 'aria-checked', 'aria-selected', 'aria-disabled', 'placeholder'])].map(key => [key, node.getAttribute(key) || ''])),
             })), total: all.length, truncated: all.length > offset + args.limit }
           } else if (!node && !op.startsWith('media.')) result = { ok: false, reason: 'not_found' }
           else if (op === 'credentials.fill') {
@@ -83,7 +91,7 @@ export function host(html, url) {
           } else if (op === 'document.value') result = node.type === 'password' || node.hasAttribute('data-zerror-private') ? { ok: false, reason: 'private_input' } : { ok: true, value: node.value || '' }
           else if (op === 'document.compare') result = node.type === 'password' || node.hasAttribute('data-zerror-private') ? { ok: false, reason: 'private_input' } : { ok: true, matches: node.value === args.text }
           else if (op === 'document.click') { node.click(); io.onClick(node); result = { ok: true, dispatched: true } }
-          else if (op === 'document.scroll' || op === 'document.select') result = { ok: true }
+          else if (op === 'document.reveal' || op === 'document.scroll' || op === 'document.select') result = { ok: true }
           else if (op === 'media.read') result = { ...state }
           else if (op === 'media.mute') { state.muted = args.muted; result = { ...state } }
           else if (op === 'media.play') { state.paused = false; result = { ...state } }
@@ -127,4 +135,44 @@ export async function execute(tool, args, io, resume) {
     }
     throw new Error('command budget exceeded')
   } finally { context.dispose(); runtime.dispose() }
+}
+
+export function framedHost(html, url, children) {
+  const root = host(html, url, 'root'), base = root.execute.bind(root)
+  const frames = new Map([['root', root], ...children.map(child => [child.id, host(child.html, child.url, child.id)])])
+  const live = () => {
+    const ids = new Set(['root'])
+    for (let depth = 0; depth < 16; depth++) {
+      const previous = ids.size
+      for (const child of children) if (ids.has(child.parent || 'root') && frames.get(child.parent || 'root').window.document.querySelector(child.selector)) ids.add(child.id)
+      if (ids.size === previous) break
+    }
+    return ids
+  }
+  root.child = id => frames.get(id)
+  root.execute = async (op, args) => {
+    if (op === 'document.list') {
+      root.events.push({ op, args: plain(args) })
+      return { ok: true, documents: [...live()].map(id => frames.get(id).document()) }
+    }
+    if (op === 'document.frames') {
+      root.events.push({ op, args: plain(args) })
+      const parent = frames.get(args.document.frameId)
+      assert.deepEqual(parent?.document(), args.document, 'stale parent frame')
+      const owners = [...parent.window.document.querySelectorAll(args.selector)]
+      if (owners.length !== 1 || !['IFRAME','FRAME'].includes(owners[0].tagName)) return { ok: false, reason: 'not_found' }
+      const matched = children.filter(child => (child.parent || 'root') === args.document.frameId && parent.window.document.querySelector(child.selector) === owners[0] && live().has(child.id))
+      return { ok: true, documents: matched.map(child => frames.get(child.id).document()) }
+    }
+    const target = args.document && frames.get(args.document.frameId)
+    if (target && target !== root) {
+      assert(live().has(args.document.frameId), 'orphaned frame cannot execute')
+      root.events.push({ op, args: plain(args) })
+      return target.execute(op, args)
+    }
+    return base(op, args)
+  }
+  const close = root.close
+  root.close = () => { for (const [id, frame] of frames) if (id !== 'root') frame.close(); close() }
+  return root
 }

@@ -1,25 +1,10 @@
-import { call, documents, nodes, query, one, click, pause, checkpoint, child, stableId, result, urlParts } from './host.js'
+import { call, documents, nodes, one, click, pause, checkpoint, stableId, result, urlParts } from './host.js'
 import { chapter, viewer, discussion } from './rules.js'
+import { readChapterState, directoryState, publicChapter, taskDocuments } from './chapterState.js'
+import { courseIdentity, courseCatalog } from './courses.js'
+import { loginFlow } from './login.js'
 
-function* chapterState() {
-  const all = yield* documents()
-  for (const document of all) {
-    const active = yield* nodes(document, ':is(' + chapter.rows + ')' + chapter.active, 2)
-    if (active.length !== 1) continue
-    const row = active[0]
-    let done = (yield* nodes(document, child(row, chapter.done), 1)).length > 0
-    if (done && chapter.completionScope === 'tabs') {
-      const tabPage = yield* query(document, chapter.tabs, 40)
-      if (tabPage.truncated) done = false
-      for (const tab of tabPage.nodes) {
-        if (!tab.disabled && !(yield* nodes(document, child(tab, chapter.done), 1)).length) { done = false; break }
-      }
-    }
-    return { all, document, row, complete: done, key: stableId([document.url, row.attributes.id, row.text]) }
-  }
-  return { all, complete: false, key: '' }
-}
-function* readViewer(document, args) {
+export function* readViewer(document, args) {
   const indicators = yield* nodes(document, viewer.marker, 8)
   const viewports = (yield* nodes(document, viewer.viewport, 4)).filter(node => node.visible && node.scroll?.max > 0)
   const buttons = (yield* nodes(document, viewer.next, 4)).filter(node => node.visible && !node.disabled && node.attributes['aria-disabled'] !== 'true')
@@ -50,108 +35,193 @@ function* readViewer(document, args) {
   }
   return result('awaiting_credit', '阅读器已无可确认的下一页，尚未将其视为章节完成。', { complete: false })
 }
-export function* readDocument(args) {
-  const documentsNow = yield* documents()
-  for (const document of documentsNow) { const read = yield* readViewer(document, args); if (read) return read }
-  return result('not_found', '没有识别到支持的课件阅读器。')
+function* readOwnedViewer(document, args) {
+  for (let depth = 0; depth < 4; depth++) {
+    const read = yield* readViewer(document, args)
+    if (read) return { receipt: read, document }
+    const frames = (yield* nodes(document, 'iframe,frame', 2)).filter(node => node.visible)
+    if (frames.length !== 1) return null
+    const child = yield* call('document.frames', { document, selector: frames[0].selector })
+    if (child.documents?.length !== 1) return null
+    document = child.documents[0]
+  }
+  return null
 }
-export function* studyFlow(args) {
-  // Restoring a checkpoint always starts with a fresh DOM observation; never reuse saved locators.
-  let previous = '', stagnant = 0, pauses = 0
-  for (let step = 0; step < 24; step++) {
-    let state = yield* chapterState()
-    if (args.read_only) return result('chapter', '已按当前平台标记复核章节。', { complete: state.complete })
+export function* readDocument(args) {
+  const state = yield* readChapterState()
+  if (!state.error) {
+    const job = state.jobs.find(job => job.kind === 'document' && !job.done)
+    if (!job?.selector) return result('not_found', '当前页签没有未完成的课件任务。')
+    const frame = yield* call('document.frames', { document: job.document, selector: job.selector })
+    if (frame.documents?.length !== 1) return result('task_loading', '课件所属文档尚未加载。')
+    return (yield* readOwnedViewer(frame.documents[0], args))?.receipt || result('not_found','当前课件没有已确认的阅读器。')
+  }
+  const root = (state.all || (yield* documents()))[0]
+  return (yield* readOwnedViewer(root,args))?.receipt || result('not_found','当前页面没有识别到支持的课件阅读器。')
+}
+function report(state, status, message, extra = {}) {
+  return result(status, message, { complete: Boolean(state.complete), chapter: publicChapter(state), ...extra })
+}
+export function* openDirectory(expected) {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const all = yield* documents(), directory = yield* directoryState(expected, all)
+    if (!directory.error) return directory
+    if (directory.error !== 'directory_unavailable') return directory
+    if (attempt === 0) {
+      const entries = []
+      for (const document of all) {
+        if (courseIdentity(document.url)?.key !== expected) continue
+        const node = yield* one(document, 'a[title="章节"][data-url*="/mycourse/studentcourse"]', true)
+        if (node) entries.push({ document, node })
+      }
+      if (entries.length !== 1) return directory
+      yield* click(entries[0].document, entries[0].node)
+    }
+    yield* pause(200)
+  }
+  return { error: 'directory_unavailable' }
+}
+function* advanceCourse(state, args) {
+  const directory = yield* openDirectory(state.key?.split(':').slice(0, 2).join(':') || state.courseKey)
+  if (directory.error) return report(state, directory.error, '未确认完整学生章节目录，停止自动跳转。', { complete: false })
+  const rows = directory.chapters, scope = args.chapter_range
+  const eligible = scope ? rows.filter(row => { const number = Number(row.number); return Number.isInteger(number) && number >= scope.start && number <= scope.end }) : rows
+  if (scope && (!eligible.length || !eligible.some(row => Number(row.number) === scope.start) || !eligible.some(row => Number(row.number) === scope.end))) return report(state, 'range_unconfirmed', '尚未确认请求范围中的全部章节。', { complete: false })
+  const next = eligible.find(row => row.pending)
+  if (!next) return report(state, !directory.truncated && eligible.length && eligible.every(row => row.complete) ? 'course_complete' : 'directory_unconfirmed',
+    '已按目录重新核对任务计数；未知条目或未读目录不视为完成。', { complete: !directory.truncated && eligible.length > 0 && eligible.every(row => row.complete) })
+  if (!next.node?.visible || next.node.disabled) return report(state, 'chapter_unavailable', '待完成章节没有唯一可用的打开控件。', { complete: false })
+  yield* checkpoint({ phase: 'opening_chapter', course: directory.courseKey, chapter: next.key })
+  yield* click(next.document, next.node)
+  for (let wait = 0; wait < 8; wait++) {
+    yield* pause(200)
+    const current = yield* readChapterState()
+    if (!current.error && current.key === next.key) return null
+  }
+  return report(state, 'chapter_unconfirmed', '打开请求已发出，目标章节尚未确认。', { complete: false })
+}
+function* jobDocument(state, job) {
+  yield* call('document.reveal', { document: job.document, selector: job.selector })
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const frame = yield* call('document.frames', { document: job.document, selector: job.selector })
+    if (frame.documents?.length === 1) return frame.documents[0]
+    yield* pause(200)
+  }
+  return null
+}
+export function* studyFlow(args, resume) {
+  const restored = resume?.state
+  let expected = args.current_only && typeof restored?.chapter === 'string' ? restored.chapter : '', previous = '', stagnant = 0
+  for (let step = 0; step < 12; step++) {
+    const state = yield* readChapterState()
+    if (restored?.course && courseIdentity(state.all?.[0]?.url || state.root?.url || '')?.key !== restored.course) return report(state, 'workflow_mismatch', '当前页面不再属于原课程；没有重放导航或播放。', { complete: false, workflowPending: true })
+    if (state.error) {
+      if (args.read_only || args.current_only || expected) return report(state, state.error, '当前章节身份尚未确认，没有操作其他文档。', { complete: false })
+      const all = state.all || (yield* documents()), course = courseIdentity(all[0].url)
+      if (!course?.clazz) return report(state, state.error, '请先进入目标学生课程。', { complete: false })
+      const advanced = yield* advanceCourse({ ...state, courseKey: course.key }, args)
+      if (advanced) return advanced
+      continue
+    }
+    if (expected && state.key !== expected) return report(state, 'chapter_changed', '章节已变化，请重新核对请求范围。', { complete: false })
+    expected = state.key
+    if (args.read_only) return report(state, 'chapter', '已只读核对当前章节身份、平台计数与任务点。')
+    if (args.chapter_range) {
+      const number = Number(state.number), range = args.chapter_range
+      if (!Number.isInteger(number) || number < range.start || number > range.end) {
+        if (args.current_only) return report(state, 'range_unconfirmed', '当前章节不在已确认的请求范围内。', { complete: false })
+        const advanced = yield* advanceCourse(state, args)
+        if (advanced) return advanced
+        expected = ''; continue
+      }
+    }
     if (state.complete) {
-      if (args.current_only) return result('chapter_complete', '已观察到当前章节的完成图标。', { complete: true })
-      let directoryDocument = state.document, directoryRow = state.row
-      if (chapter.directoryRows) {
-        directoryRow = undefined
-        for (const document of state.all) {
-          const active = yield* one(document, chapter.directoryActive, true)
-          if (active) { directoryDocument = document; directoryRow = active; break }
-        }
-      }
-      if (!directoryRow) return result('directory_unavailable', '当前节已完成，但尚未确认其在课程目录中的位置。', { complete: true })
-      const directoryPage = yield* query(directoryDocument, chapter.directoryRows || chapter.rows, 40)
-      const rows = directoryPage.nodes
-      const current = rows.findIndex(node => node.selector === directoryRow.selector)
-      if (current < 0) return result('directory_unavailable', '当前小节不在已读取的目录范围中，请重新读取目录。', { complete: true })
-      let next
-      for (const row of rows.slice(Math.max(0, current + 1))) {
-        if (!(yield* nodes(directoryDocument, child(row, chapter.directoryDone || chapter.done), 1)).length && row.visible && !row.disabled) { next = row; break }
-      }
-      if (!next && directoryPage.truncated) return result('directory_more', '目录仍有未读取条目，请继续读取目录后核对用户范围。', { complete: false })
-      if (!next) return result('no_next_observed', '当前已读取的目录中没有下一待完成章节；未把未读取条目视为完成。', { complete: true })
-      yield* click(directoryDocument, next); yield* pause(250); continue
+      if (args.current_only) return report(state, 'chapter_complete', '已观察到当前章节任务计数为零或明确完成标记。')
+      const advanced = yield* advanceCourse(state, args)
+      if (advanced) return advanced
+      expected = ''; previous = ''; stagnant = 0; continue
     }
-    let mediaTarget
-    for (const document of state.all) {
-      const media = (yield* nodes(document, chapter.media, 4)).filter(node => node.selector)
-      // Hidden preload players must never be started alongside the active player.
-      const visible = media.filter(node => node.visible)
-      if (visible.length === 1) { mediaTarget = { document, node: visible[0] }; break }
+    if (!state.loaded) return report(state, 'chapter_loading', '当前页签的任务文档尚未正确加载；空列表不视为完成。', { workflowPending: true })
+    const job = state.jobs.find(row => !row.done)
+    if (!job) {
+      const next = state.tabs[state.tab]
+      if (!next?.visible || next.disabled || /(?:^|\s)disabled(?:\s|$)/.test(next.attributes.class) || next.attributes['aria-disabled'] === 'true') return report(state, 'awaiting_credit', '任务点已核对，但章节计数尚未确认完成。', { workflowPending: true })
+      yield* click(state.document, next); yield* pause(250)
+      const after = yield* readChapterState()
+      if (after.key !== state.key || after.tab !== state.tab + 1 || !after.loaded) return report(state, 'tab_unconfirmed', '新页签身份或所属任务文档尚未确认。', { workflowPending: true })
+      continue
     }
-    if (mediaTarget) {
-      const { document, node } = mediaTarget
-      const target = { document, selector: node.selector }
-      let media = yield* call('media.read', target)
+    if (!job.selector || job.kind === 'unknown') return report(state, 'unsupported_task', '存在未识别的真实任务点，请核对当前页面。')
+    if (args.video_only && job.kind !== 'video') return report(state, 'needs_' + job.kind, '当前待完成任务不是视频。')
+    const document = yield* jobDocument(state, job)
+    if (!document) return report(state, 'task_loading', '当前任务点的所属 iframe 尚未加载。', { workflowPending: true })
+    if (job.kind === 'quiz' || job.kind === 'discussion') return report(state, 'needs_' + job.kind, '已确认所属任务文档，请使用本站读题或讨论工具后继续。')
+    if (job.kind === 'video') {
+      const mediaNodes = (yield* nodes(document, chapter.media, 4)).filter(node => node.visible)
+      if (mediaNodes.length !== 1) return report(state, 'media_unconfirmed', '未确认当前任务内唯一可见播放器。')
+      const target = { document, selector: mediaNodes[0].selector }
+      let media = yield* call('media.read', target), pauses = 0
       if (!media.ended) {
-        yield* checkpoint({ phase: 'media', url: document.url, chapter: state.key })
+        yield* checkpoint({ phase: 'media', course: state.key.split(':').slice(0,2).join(':'), chapter: state.key, job: job.id })
         yield* call('media.mute', { ...target, muted: args.muted !== false })
         if (media.paused) media = yield* call('media.play', target)
         for (let wait = 0; wait < 48 && !media.ended; wait++) {
           media = yield* call('media.wait', { ...target, until: 'ended', timeoutMs: 30000 })
-          if (['error', 'emptied', 'cancelled'].includes(media.event)) return result('media_interrupted', '媒体状态变化，请重新核对页面。', { complete: false, workflowPending: true })
+          if (['error','emptied','cancelled'].includes(media.event)) return report(state, 'media_interrupted', '媒体已中断，等待重新观察。', { workflowPending: true })
           if (media.paused && !media.ended) {
-            // A site quiz or a user pause is not permission to fight the page indefinitely.
-            if (++pauses > 1) return result('paused', '媒体再次暂停，请核对弹题、验证或用户操作。', { complete: false, workflowPending: true })
-            const quiz = (yield* nodes(document, chapter.question, 1)).length
-            if (quiz) return result('needs_quiz', '播放中出现测验，请先读取题目。', { complete: false })
+            const blocking = (yield* nodes(document, chapter.question + ', [id*="captcha"], [class*="captcha"]', 4)).some(node => node.visible)
+            if (blocking) return report(state, 'needs_review', '播放器出现测验或验证控件，停止自动恢复。', { workflowPending: true })
+            if (++pauses > 1) return report(state, 'paused', '当前视频再次暂停，请核对网页或用户操作。', { workflowPending: true })
             media = yield* call('media.play', target)
           }
         }
-        if (!media.ended) return result('watching', '媒体仍在播放，可从检查点继续等待。', { complete: false, workflowPending: true })
+        if (!media.ended) return report(state, 'watching', '视频仍在播放，可从检查点继续等待。', { workflowPending: true })
       }
-      // A media ended event never proves platform completion.
-      yield* pause(500); state = yield* chapterState()
-      if (state.complete) continue
-    }
-    let readingAdvanced = false
-    for (const document of state.all) {
-      if ((yield* nodes(document, chapter.question, 1)).length) return result('needs_quiz', '当前有章节测验，请读取题目并核对答案。', { complete: false })
-      if (chapter.discussion && (yield* nodes(document, chapter.discussion, 1)).length) return result('needs_discussion', '当前有章节讨论，请读取题目与匿名回复样本。', { complete: false })
-      if (!args.video_only) {
-        const read = yield* readViewer(document, {})
-        if (read?.status === 'document_advanced') {
-          const fingerprint = JSON.stringify([document, (yield* nodes(document, viewer.marker, 8)).map(node => [node.text, node.attributes.src])])
-          stagnant = fingerprint === previous ? stagnant + 1 : 0; previous = fingerprint
-          if (stagnant >= 2) return result('reading_unconfirmed', '课件操作后未观察到阅读位置推进，请核对阅读器。', { complete: false })
-          readingAdvanced = true
-          yield* checkpoint({ phase: 'reading', url: document.url, chapter: state.key })
-          break
-        }
+      for (let credit = 0; credit < 6; credit++) {
+        yield* pause(250)
+        const after = yield* readChapterState()
+        if (after.key !== state.key || after.tab !== state.tab) return report(state, 'chapter_changed', '播放后页面身份发生变化，请重新核对。', { complete: false })
+        const actual = after.jobs.find(row => row.id === job.id)
+        if (after.complete || actual?.done) break
+        if (credit === 5) return report(after, 'awaiting_credit', '视频已结束，平台任务点尚未确认完成。', { complete: false, workflowPending: true })
       }
+      continue
     }
-    if (readingAdvanced) continue
-    let moved = false
-    for (const document of state.all) {
-      const tabs = (yield* nodes(document, chapter.tabs, 40)).filter(node => node.visible)
-      const active = tabs.findIndex(node => node.attributes['aria-selected'] === 'true' || new RegExp(chapter.selectedTab).test(node.attributes.class))
-      const next = tabs[active + 1]
-      if (active >= 0 && next && !next.disabled && !new RegExp(chapter.disabledTab).test(next.attributes.class) && next.attributes['aria-disabled'] !== 'true') {
-        yield* click(document, next); yield* pause(250); moved = true; break
-      }
-    }
-    if (!moved) return result('awaiting_credit', '没有观察到章节完成标记或可安全推进的页签。', { complete: false })
+    const bound = yield* readOwnedViewer(document, {}), read = bound?.receipt
+    if (!read) return report(state, 'viewer_unconfirmed', '当前课件任务中没有识别到阅读器。')
+    if (read.status !== 'document_advanced') return report(state, read.status, read.message, { workflowPending: true })
+    const fingerprint = JSON.stringify([state.key, state.tab, job.id, (yield* nodes(bound.document, viewer.marker, 8)).map(node => [node.text, node.attributes.src])])
+    stagnant = fingerprint === previous ? stagnant + 1 : 0; previous = fingerprint
+    if (stagnant >= 2) return report(state, 'reading_unconfirmed', '阅读位置没有推进，请核对课件。')
+    yield* checkpoint({ phase: 'reading', course: state.key.split(':').slice(0,2).join(':'), chapter: state.key, job: job.id }); yield* pause(250)
   }
-  return result('pending', '已达到单次推进上限，请重新核对当前章节后继续。', { complete: false })
+  return result('pending', '已到单次推进上限，请重新观察后继续。', { complete: false, workflowPending: true })
+}
+export function* startCourse(args, resume) {
+  if (resume?.state?.course) {
+    const all = yield* documents()
+    if (courseIdentity(all[0].url)?.key !== resume.state.course) return result('workflow_mismatch', '当前页面不属于原课程，请先核对原流程。', { complete: false, workflowPending: true })
+    return yield* studyFlow(args, resume)
+  }
+  const login = yield* loginFlow(args)
+  if (!login.loggedIn) return login
+  const opened = yield* courseCatalog({ title: args.course_name, teacher: args.teacher })
+  if (opened.status !== 'opened') return opened
+  const course = courseIdentity((yield* documents())[0].url)
+  if (!course?.clazz) return result('course_unconfirmed', '学生课程身份尚未完整确认。')
+  // Persist progress before the potentially large directory scan exhausts this invocation.
+  yield* checkpoint({ phase: 'course_opened', course: course.key })
+  return yield* studyFlow(args)
 }
 export function* discussionFlow(args, resume) {
   if (!discussion) return result('unsupported', '该站点尚无已核实的讨论规则。')
-  const documentsNow = yield* documents()
+  const documentsNow = yield* taskDocuments('discussion'), candidates = []
   for (const document of documentsNow) {
     const topic = yield* nodes(document, discussion.topic, 4)
-    if (!topic.length) continue
+    if (topic.some(node => node.visible)) candidates.push({document,topic})
+  }
+  if (candidates.length > 1) return result('ambiguous','存在多个讨论正文，未选择发布目标。')
+  for (const { document, topic } of candidates) {
     const text = topic.map(node => node.text.trim()).filter(Boolean).join('\n').slice(0, 2600)
     const id = stableId([document, text])
     const replies = (yield* nodes(document, discussion.replies, 6)).map(node => node.text.trim().slice(0, 500))
